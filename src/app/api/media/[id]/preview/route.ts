@@ -20,11 +20,21 @@ export async function GET(
   try {
     const { id } = await params;
     
-    // We optionally allow checking session here. Since it's for <img> tags, 
-    // the browser sends cookies, so getServerSession will work.
+    const { searchParams } = new URL(req.url);
+    const shareToken = searchParams.get("shareToken");
+    
+    // Check session or share token
     const session = await getServerSession(authOptions);
     if (!session || !session.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      if (shareToken) {
+        const share = await prisma.shareLink.findUnique({ where: { token: shareToken } });
+        if (!share || (share.expiresAt && share.expiresAt < new Date())) {
+          return NextResponse.json({ error: "Invalid share link" }, { status: 401 });
+        }
+        // Additional validation could go here (e.g. check if media is in the shared folder)
+      } else {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
     }
 
     const media = await prisma.media.findUnique({

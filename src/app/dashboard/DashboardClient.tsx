@@ -5,7 +5,8 @@ import { Sidebar, ViewType } from "@/components/Sidebar";
 import { UploadModal } from "@/components/UploadModal";
 import { TagEditModal } from "@/components/TagEditModal";
 import { FolderCreateModal } from "@/components/FolderCreateModal";
-import { Star, Download, Search, Image as ImageIcon, Video as VideoIcon, Folder, ChevronRight, Tag as TagIcon, Trash2, RotateCcw } from "lucide-react";
+import { ShareModal } from "@/components/ShareModal";
+import { Star, Download, Search, Image as ImageIcon, Video as VideoIcon, Folder, ChevronRight, Tag as TagIcon, Trash2, RotateCcw, Link as LinkIcon, CheckSquare, Square, X } from "lucide-react";
 
 interface MediaTag {
   tag: {
@@ -54,6 +55,9 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
   const [isUploadOpen, setIsUploadOpen] = useState(false);
   const [isFolderCreateOpen, setIsFolderCreateOpen] = useState(false);
   const [tagEditMediaId, setTagEditMediaId] = useState<string | null>(null);
+  const [shareModalData, setShareModalData] = useState<{id: string, type: 'folder' | 'media', title: string} | null>(null);
+  
+  const [selectedMediaIds, setSelectedMediaIds] = useState<Set<string>>(new Set());
   
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -108,17 +112,20 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
     setView("home");
     setBreadcrumbs([]);
     setCurrentTag(null);
+    setSelectedMediaIds(new Set());
   };
 
   const handleNavigateTrash = () => {
     setView("trash");
     setBreadcrumbs([]);
     setCurrentTag(null);
+    setSelectedMediaIds(new Set());
   };
 
   const handleNavigateFolder = (folderId: string, folderName: string) => {
     setView("folder");
     setCurrentTag(null);
+    setSelectedMediaIds(new Set());
     if (!breadcrumbs.find(b => b.id === folderId)) {
       setBreadcrumbs([{ id: folderId, name: folderName }]);
     } else {
@@ -131,6 +138,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
     setView("tag");
     setCurrentTag(tagName);
     setBreadcrumbs([]);
+    setSelectedMediaIds(new Set());
   };
 
   const toggleHighlight = async (id: string, currentStatus: boolean) => {
@@ -158,6 +166,11 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
     if (isDeleted && !confirm("Are you sure you want to delete this media? It will be kept in trash for 7 days.")) return;
     
     setMedia(media.filter(m => m.id !== id));
+    if (selectedMediaIds.has(id)) {
+      const newSet = new Set(selectedMediaIds);
+      newSet.delete(id);
+      setSelectedMediaIds(newSet);
+    }
     try {
       await fetch(`/api/media/${id}`, {
         method: "PATCH",
@@ -184,6 +197,73 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
       fetchSidebarData();
     } catch (e) {
       console.error(e);
+      fetchData();
+    }
+  };
+
+  const toggleSelection = (id: string) => {
+    const newSet = new Set(selectedMediaIds);
+    if (newSet.has(id)) newSet.delete(id);
+    else newSet.add(id);
+    setSelectedMediaIds(newSet);
+  };
+
+  const selectAll = () => {
+    if (selectedMediaIds.size === filteredMedia.length) {
+      setSelectedMediaIds(new Set());
+    } else {
+      setSelectedMediaIds(new Set(filteredMedia.map(m => m.id)));
+    }
+  };
+
+  const handleBulkDownload = async () => {
+    if (selectedMediaIds.size === 0) return;
+    try {
+      const res = await fetch("/api/media/bulk-download", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mediaIds: Array.from(selectedMediaIds) }),
+      });
+      const data = await res.json();
+      if (data.urls) {
+        // Trigger individual downloads in the browser
+        data.urls.forEach((item: any, index: number) => {
+          setTimeout(() => {
+            const a = document.createElement("a");
+            a.href = item.url;
+            a.download = item.filename || "download";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+          }, index * 200); // Stagger by 200ms to prevent browser blocking
+        });
+        setSelectedMediaIds(new Set());
+      }
+    } catch (e) {
+      console.error("Bulk download failed", e);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedMediaIds.size === 0) return;
+    if (!confirm(`Are you sure you want to delete ${selectedMediaIds.size} items?`)) return;
+
+    const ids = Array.from(selectedMediaIds);
+    
+    // Optimistic UI update
+    setMedia(media.filter(m => !ids.includes(m.id)));
+    setSelectedMediaIds(new Set());
+
+    try {
+      await Promise.all(
+        ids.map(id => fetch(`/api/media/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isDeleted: true }),
+        }))
+      );
+    } catch (e) {
+      console.error("Bulk delete failed", e);
       fetchData();
     }
   };
@@ -323,13 +403,22 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                           <Folder className="w-6 h-6 text-blue-500 flex-shrink-0" />
                           <span className="text-white font-medium truncate">{folder.name}</span>
                         </div>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id); }}
-                          className="text-gray-500 hover:text-red-400 p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Delete Folder"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); setShareModalData({ id: folder.id, type: 'folder', title: folder.name }); }}
+                            className="text-gray-400 hover:text-blue-400 p-1.5 rounded"
+                            title="Share Folder"
+                          >
+                            <LinkIcon className="w-4 h-4" />
+                          </button>
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); deleteFolder(folder.id); }}
+                            className="text-gray-500 hover:text-red-400 p-1.5 rounded"
+                            title="Delete Folder"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -343,10 +432,22 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                     {filteredMedia.map((item) => {
                       const video = isVideo(item.original_filename);
+                      const isSelected = selectedMediaIds.has(item.id);
 
                       return (
-                        <div key={item.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 group hover:border-gray-600 transition-all duration-200 shadow-sm hover:shadow-xl relative flex flex-col">
-                          <div className="aspect-square bg-gray-950 relative">
+                        <div key={item.id} className={`bg-gray-900 rounded-xl overflow-hidden border group transition-all duration-200 shadow-sm hover:shadow-xl relative flex flex-col ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/50' : 'border-gray-800 hover:border-gray-600'}`}>
+                          
+                          {/* Selection Checkbox Overlay */}
+                          {view !== "trash" && (
+                            <button
+                              onClick={() => toggleSelection(item.id)}
+                              className={`absolute top-2 left-2 z-10 p-1 rounded-md transition-all ${isSelected ? 'bg-blue-600 text-white opacity-100' : 'bg-black/40 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-black/60'}`}
+                            >
+                              {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
+                            </button>
+                          )}
+
+                          <div className="aspect-square bg-gray-950 relative" onClick={() => view !== "trash" && toggleSelection(item.id)}>
                             {video ? (
                               <div className="absolute inset-0 flex items-center justify-center">
                                 <VideoIcon className="w-12 h-12 text-gray-700" />
@@ -379,6 +480,13 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                                     title="Edit Tags"
                                   >
                                     <TagIcon className="w-4 h-4 text-white" />
+                                  </button>
+                                  <button
+                                    onClick={() => setShareModalData({ id: item.id, type: 'media', title: item.original_filename })}
+                                    className="p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-blue-500/20 hover:text-blue-400 text-white transition-colors"
+                                    title="Share Media"
+                                  >
+                                    <LinkIcon className="w-4 h-4" />
                                   </button>
                                   <button
                                     onClick={() => deleteMedia(item.id, true)}
@@ -477,6 +585,50 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
             fetchSidebarData();
           }}
         />
+      )}
+
+      {shareModalData && (
+        <ShareModal
+          folderId={shareModalData.type === 'folder' ? shareModalData.id : null}
+          mediaId={shareModalData.type === 'media' ? shareModalData.id : null}
+          title={shareModalData.title}
+          onClose={() => setShareModalData(null)}
+        />
+      )}
+
+      {/* Floating Action Bar for Bulk Selection */}
+      {selectedMediaIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 border border-blue-500/50 shadow-2xl rounded-full px-6 py-3 flex items-center space-x-6 z-40">
+          <div className="text-white font-medium text-sm">
+            <span className="text-blue-400 font-bold">{selectedMediaIds.size}</span> selected
+          </div>
+          <div className="h-6 w-px bg-gray-800"></div>
+          <button onClick={selectAll} className="text-gray-400 hover:text-white text-sm font-medium transition-colors">
+            {selectedMediaIds.size === filteredMedia.length ? 'Deselect All' : 'Select All'}
+          </button>
+          <div className="flex items-center space-x-2">
+            <button 
+              onClick={handleBulkDownload}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-full text-sm font-medium flex items-center space-x-2 transition-colors shadow-lg shadow-blue-900/20"
+            >
+              <Download className="w-4 h-4" />
+              <span>Download</span>
+            </button>
+            <button 
+              onClick={handleBulkDelete}
+              className="bg-red-500/10 hover:bg-red-500/20 text-red-400 px-4 py-1.5 rounded-full text-sm font-medium flex items-center space-x-2 transition-colors"
+            >
+              <Trash2 className="w-4 h-4" />
+              <span>Delete</span>
+            </button>
+          </div>
+          <button 
+            onClick={() => setSelectedMediaIds(new Set())}
+            className="absolute -top-2 -right-2 bg-gray-800 border border-gray-700 text-gray-400 hover:text-white p-1 rounded-full shadow-lg"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
       )}
     </div>
   );

@@ -47,6 +47,7 @@ model User {
   sessions      Session[]
   media         Media[]   @relation("UploadedMedia")
   auditLogs     AuditLog[]
+  shareLinks    ShareLink[] @relation("CreatedShareLinks")
 }
 
 model VerificationToken {
@@ -69,6 +70,7 @@ model Folder {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
+  shareLinks ShareLink[]
 }
 
 model Tag {
@@ -98,6 +100,7 @@ model Media {
   createdAt         DateTime   @default(now())
   takenAt           DateTime?  // From EXIF data
   deletedAt         DateTime?
+  shareLinks        ShareLink[]
 }
 
 model MediaTag {
@@ -116,4 +119,21 @@ model AuditLog {
   action    String   // UPLOAD_MEDIA, HIGHLIGHT, REQUEST_RESTORE, ADD_TAG, etc.
   details   String?  // JSON string or description
   timestamp DateTime @default(now())
+}
+
+model ShareLink {
+  id        String   @id @default(cuid())
+  token     String   @unique @default(uuid())
+  
+  folderId  String?
+  folder    Folder?  @relation(fields: [folderId], references: [id])
+  
+  mediaId   String?
+  media     Media?   @relation(fields: [mediaId], references: [id])
+  
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  
+  createdById String
+  createdBy   User     @relation("CreatedShareLinks", fields: [createdById], references: [id])
 }
