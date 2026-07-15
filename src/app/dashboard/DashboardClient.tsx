@@ -63,16 +63,24 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
   const [searchQuery, setSearchQuery] = useState("");
   const [mediaFilter, setMediaFilter] = useState<"all" | "image" | "video">("all");
 
+  const [isLoading, setIsLoading] = useState(true);
+
   const currentFolderId = view === "folder" && breadcrumbs.length > 0 
     ? breadcrumbs[breadcrumbs.length - 1].id 
     : null;
 
   useEffect(() => {
-    fetchSidebarData();
+    // Initial parallel load
+    Promise.all([fetchSidebarData(), fetchData()]).finally(() => {
+      setIsLoading(false);
+    });
   }, []);
 
   useEffect(() => {
-    fetchData();
+    if (!isLoading) {
+      setIsLoading(true);
+      fetchData().finally(() => setIsLoading(false));
+    }
   }, [view, currentFolderId, currentTag]);
 
   const fetchSidebarData = async () => {
@@ -107,11 +115,14 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
         if (mediaData.media) setMedia(mediaData.media);
         setFolders([]);
       } else {
-        const folderRes = await fetch(`/api/folders${currentFolderId ? `?parentId=${currentFolderId}` : ''}`);
+        const [folderRes, mediaRes] = await Promise.all([
+          fetch(`/api/folders${currentFolderId ? `?parentId=${currentFolderId}` : ''}`),
+          fetch(`/api/media${currentFolderId ? `?folderId=${currentFolderId}` : ''}`)
+        ]);
+        
         const folderData = await folderRes.json();
         if (folderData.folders) setFolders(folderData.folders);
 
-        const mediaRes = await fetch(`/api/media${currentFolderId ? `?folderId=${currentFolderId}` : ''}`);
         const mediaData = await mediaRes.json();
         if (mediaData.media) setMedia(mediaData.media);
       }
@@ -344,29 +355,29 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                 {view === "trash" ? "Items here will be permanently deleted after 7 days." : "Manage and organize your church media"}
               </p>
             </div>
-            
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex-1 flex flex-col sm:flex-row gap-4">
+              <div className="relative flex-1 max-w-2xl">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search files, folders, or tags..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="bg-gray-800 border border-gray-700 text-white pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:border-blue-500 w-48 sm:w-64 transition-colors"
+                  className="bg-[#171717] border-none text-[#ececec] pl-10 pr-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-1 focus:ring-gray-600 w-full transition-shadow placeholder-gray-500"
                 />
               </div>
 
               {/* Media Filter Tabs */}
-              <div className="flex bg-gray-800 p-1 rounded-lg border border-gray-700">
+              <div className="flex bg-[#171717] p-1 rounded-xl">
                 {(["all", "image", "video"] as const).map((filterType) => (
                   <button
                     key={filterType}
                     onClick={() => setMediaFilter(filterType)}
-                    className={`px-4 py-1.5 text-sm font-medium rounded-md capitalize transition-colors ${
+                    className={`px-4 py-1.5 text-sm font-medium rounded-lg capitalize transition-all duration-200 ${
                       mediaFilter === filterType 
-                        ? 'bg-gray-700 text-white shadow-sm' 
-                        : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
+                        ? 'bg-[#2f2f2f] text-white shadow-sm' 
+                        : 'text-gray-400 hover:text-gray-200 hover:bg-[#212121]'
                     }`}
                   >
                     {filterType}
@@ -375,22 +386,23 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
               </div>
 
               {view !== "trash" && (
-                <>
+                <div className="flex gap-2">
                   <button
                     onClick={() => setIsFolderCreateOpen(true)}
-                    className="bg-gray-800 border border-gray-700 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    className="bg-[#171717] hover:bg-[#212121] text-[#ececec] px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
                   >
                     New Folder
                   </button>
                   <button
                     onClick={() => setIsUploadOpen(true)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg shadow-blue-900/20"
+                    className="bg-white hover:bg-gray-200 text-black px-4 py-2.5 rounded-xl text-sm font-medium transition-colors shadow-sm"
                   >
                     Upload Media
                   </button>
-                </>
+                </div>
               )}
             </div>
+          </div>
           </div>
 
           {/* Breadcrumbs (only show if in a folder) */}
@@ -418,10 +430,16 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
             </div>
           )}
 
-          {filteredFolders.length === 0 && filteredMedia.length === 0 ? (
-            <div className="text-center py-20 bg-gray-900 rounded-xl border border-gray-800 border-dashed">
-              <ImageIcon className="mx-auto h-12 w-12 text-gray-700 mb-4" />
-              <h3 className="text-lg font-medium text-white mb-1">
+          {isLoading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {[...Array(12)].map((_, i) => (
+                <div key={i} className="aspect-square bg-[#171717] animate-pulse rounded-xl"></div>
+              ))}
+            </div>
+          ) : filteredFolders.length === 0 && filteredMedia.length === 0 ? (
+            <div className="text-center py-20 bg-[#171717] rounded-2xl border border-[#2f2f2f] border-dashed">
+              <ImageIcon className="mx-auto h-12 w-12 text-gray-600 mb-4" />
+              <h3 className="text-lg font-medium text-[#ececec] mb-1">
                 {view === "trash" ? "Trash is empty" : "No media found here"}
               </h3>
               <p className="text-gray-500 text-sm mb-4">
@@ -436,10 +454,10 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                 <div>
                   <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Folders</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {filteredFolders.map(folder => (
-                      <div 
-                        key={folder.id} 
-                        className="bg-gray-900 rounded-lg p-4 border border-gray-800 hover:border-blue-500 hover:bg-gray-800 transition-all cursor-pointer group flex items-center justify-between shadow-sm"
+                    {filteredFolders.map((folder) => (
+                      <div
+                        key={folder.id}
+                        className="group relative bg-[#171717] hover:bg-[#212121] p-4 rounded-xl cursor-pointer transition-all duration-200 border border-transparent hover:border-[#2f2f2f]"
                       >
                         <div className="flex items-center space-x-3 truncate" onClick={() => handleNavigateFolder(folder.id, folder.name)}>
                           <Folder className="w-6 h-6 text-blue-500 flex-shrink-0" />
@@ -477,19 +495,19 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                       const isSelected = selectedMediaIds.has(item.id);
 
                       return (
-                        <div key={item.id} className={`bg-gray-900 rounded-xl overflow-hidden border group transition-all duration-200 shadow-sm hover:shadow-xl relative flex flex-col ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/50' : 'border-gray-800 hover:border-gray-600'}`}>
+                        <div key={item.id} className={`content-vis-auto bg-[#171717] rounded-xl overflow-hidden border group transition-all duration-200 shadow-sm hover:shadow-xl relative flex flex-col ${isSelected ? 'border-blue-500 ring-1 ring-blue-500/50' : 'border-[#2f2f2f] hover:border-gray-600'}`}>
                           
                           {/* Selection Checkbox Overlay */}
                           {view !== "trash" && (
                             <button
                               onClick={() => toggleSelection(item.id)}
-                              className={`absolute top-2 left-2 z-10 p-1 rounded-md transition-all ${isSelected ? 'bg-blue-600 text-white opacity-100' : 'bg-black/40 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-black/60'}`}
+                              className={`absolute top-2 left-2 z-10 p-1 rounded-md transition-all ${isSelected ? 'bg-blue-600 text-white opacity-100' : 'bg-black/60 text-white/70 opacity-0 group-hover:opacity-100 hover:bg-black/80'}`}
                             >
                               {isSelected ? <CheckSquare className="w-5 h-5" /> : <Square className="w-5 h-5" />}
                             </button>
                           )}
 
-                          <div className="aspect-square bg-gray-950 relative" onClick={() => view !== "trash" && toggleSelection(item.id)}>
+                          <div className="aspect-square bg-[#0a0a0a] relative cursor-pointer" onClick={() => view !== "trash" && toggleSelection(item.id)}>
                             {video ? (
                               <div className="absolute inset-0 flex items-center justify-center">
                                 <VideoIcon className="w-12 h-12 text-gray-700" />
@@ -498,7 +516,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                               <img
                                 src={`/api/media/${item.id}/preview`}
                                 alt={item.original_filename}
-                                className="absolute inset-0 object-cover w-full h-full"
+                                className="absolute inset-0 object-cover w-full h-full image-fade-in"
                                 loading="lazy"
                               />
                             )}
@@ -524,9 +542,16 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                                     <TagIcon className="w-4 h-4 text-white" />
                                   </button>
                                   <button
+                                    onClick={() => handleDownload(item)}
+                                    className="text-gray-400 hover:text-white p-1.5 rounded transition-colors"
+                                    title="Download Original"
+                                  >
+                                    <Download className="w-4 h-4" />
+                                  </button>
+                                  <button
                                     onClick={() => setShareModalData({ id: item.id, type: 'media', title: item.original_filename })}
-                                    className="p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-blue-500/20 hover:text-blue-400 text-white transition-colors"
-                                    title="Share Media"
+                                    className="text-gray-400 hover:text-white p-1.5 rounded transition-colors"
+                                    title="Share File"
                                   >
                                     <LinkIcon className="w-4 h-4" />
                                   </button>
@@ -540,29 +565,29 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                                 </>
                               ) : (
                                 <button
-                                  onClick={() => deleteMedia(item.id, false)}
-                                  className="p-1.5 rounded-full bg-blue-600/80 backdrop-blur-sm border border-blue-500/50 hover:bg-blue-600 text-white transition-colors flex items-center space-x-1"
-                                  title="Restore Media"
+                                  onClick={() => restoreMedia(item.id)}
+                                  className="text-green-500 hover:text-green-400 p-1.5 rounded transition-colors"
+                                  title="Restore"
                                 >
-                                  <RotateCcw className="w-4 h-4" />
+                                  <History className="w-4 h-4" />
                                 </button>
                               )}
                             </div>
                           </div>
 
-                          <div className="p-3 flex-1 flex flex-col">
-                            <h4 className="text-sm font-medium text-white truncate" title={item.original_filename}>
+                          <div className="p-3 flex flex-col flex-1 min-w-0">
+                            <p className="text-sm font-medium text-[#ececec] truncate mb-1" title={item.original_filename}>
                               {item.original_filename}
-                            </h4>
-                            <p className="text-[11px] text-gray-500 mt-0.5">
-                              {formatSize(item.size)} • {new Date(item.createdAt).toLocaleDateString()}
+                            </p>
+                            <p className="text-xs text-gray-500 mb-2">
+                              {formatSize(item.size)}
                             </p>
                             
                             {item.mediaTags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {item.mediaTags.map(mt => (
-                                  <span key={mt.tag.id} className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-blue-900/20 text-blue-400 border border-blue-800/30">
-                                    {mt.tag.name}
+                              <div className="flex flex-wrap gap-1 mb-2">
+                                {item.mediaTags.slice(0, 2).map((t) => (
+                                  <span key={t.tag.name} className="px-1.5 py-0.5 bg-[#212121] text-gray-400 rounded text-[10px] truncate max-w-full border border-[#2f2f2f]">
+                                    {t.tag.name}
                                   </span>
                                 ))}
                               </div>
@@ -572,13 +597,6 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                               <span className="text-[10px] text-gray-600 truncate max-w-[90px]">
                                 by {item.uploadedBy?.name || item.uploadedBy?.email?.split('@')[0]}
                               </span>
-                              <a
-                                href={`/api/media/${item.id}/download`}
-                                className="flex items-center justify-center p-1.5 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 transition-colors"
-                                title="Download Original"
-                              >
-                                <Download className="w-3.5 h-3.5" />
-                              </a>
                             </div>
                           </div>
                         </div>
@@ -638,23 +656,17 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
         />
       )}
 
-      {/* Floating Action Bar for Bulk Selection */}
+      {/* Floating Bulk Action Bar */}
       {selectedMediaIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 border border-blue-500/50 shadow-2xl rounded-full px-6 py-3 flex items-center space-x-6 z-40">
-          <div className="text-white font-medium text-sm">
-            <span className="text-blue-400 font-bold">{selectedMediaIds.size}</span> selected
-          </div>
-          <div className="h-6 w-px bg-gray-800"></div>
+        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#171717] border border-[#2f2f2f] rounded-full shadow-2xl px-6 py-3 flex items-center space-x-6 z-40">
+          <span className="text-sm font-medium text-white">
+            {selectedMediaIds.size} selected
+          </span>
+          <div className="h-4 w-px bg-gray-700"></div>
+          
           <button onClick={selectAll} className="text-gray-400 hover:text-white text-sm font-medium transition-colors">
             {selectedMediaIds.size === filteredMedia.length ? 'Deselect All' : 'Select All'}
           </button>
-          <div className="flex items-center space-x-2">
-            <button 
-              onClick={handleBulkDownload}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded-full text-sm font-medium flex items-center space-x-2 transition-colors shadow-lg shadow-blue-900/20"
-            >
-              <Download className="w-4 h-4" />
-              <span>Download</span>
             </button>
             <button 
               onClick={handleBulkDelete}

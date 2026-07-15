@@ -37,20 +37,23 @@ export function Sidebar({
   const [tagsExpanded, setTagsExpanded] = useState(true);
 
   return (
-    <div className="w-64 bg-gray-900 border-r border-gray-800 h-screen flex flex-col hidden md:flex text-gray-300">
-      <div className="p-6">
-        <h2 className="text-2xl font-bold text-white tracking-tight">
-          <span className="text-blue-500">Media</span>Master
-        </h2>
+    <div className="w-[260px] bg-[#171717] h-screen flex flex-col hidden md:flex text-[#ececec] font-sans">
+      <div className="p-4 pt-6 pb-2">
+        <div className="flex items-center space-x-3 px-2 mb-4">
+          <img src="/logo.png" alt="MediaMaster Logo" className="w-8 h-8 rounded-md" />
+          <h2 className="text-lg font-semibold tracking-wide text-[#ececec]">
+            MediaMaster
+          </h2>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 space-y-6">
+      <div className="flex-1 overflow-y-auto px-3 space-y-6 scrollbar-hide">
         {/* Main Navigation */}
         <div className="space-y-1">
           <button
             onClick={onNavigateHome}
-            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-              currentView === "home" ? "bg-blue-600/10 text-blue-500" : "hover:bg-gray-800 hover:text-white"
+            className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
+              currentView === "home" ? "bg-[#212121] text-white" : "hover:bg-[#212121] text-gray-300"
             }`}
           >
             <Home className="w-5 h-5" />
@@ -59,8 +62,8 @@ export function Sidebar({
           
           <button
             onClick={onNavigateTrash}
-            className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
-              currentView === "trash" ? "bg-blue-600/10 text-blue-500" : "hover:bg-gray-800 hover:text-white"
+            className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
+              currentView === "trash" ? "bg-[#212121] text-white" : "hover:bg-[#212121] text-gray-300"
             }`}
           >
             <Trash2 className="w-5 h-5" />
@@ -86,14 +89,14 @@ export function Sidebar({
                   <button
                     key={folder.id}
                     onClick={() => onNavigateFolder(folder.id, folder.name)}
-                    className={`w-full flex items-center space-x-3 px-3 py-1.5 rounded-lg transition-colors ${
+                    className={`w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors ${
                       currentView === "folder" && currentFolderId === folder.id 
-                        ? "bg-gray-800 text-white" 
-                        : "hover:bg-gray-800/50 hover:text-white"
+                        ? "bg-[#212121] text-white" 
+                        : "hover:bg-[#212121] text-gray-300"
                     }`}
                   >
-                    <Folder className={`w-4 h-4 ${currentView === "folder" && currentFolderId === folder.id ? "text-blue-400" : "text-gray-500"}`} />
-                    <span className="text-sm truncate">{folder.name}</span>
+                    <Folder className={`w-4 h-4 ${currentView === "folder" && currentFolderId === folder.id ? "text-blue-400" : "text-gray-400"}`} />
+                    <span className="text-sm truncate font-medium">{folder.name}</span>
                   </button>
                 ))
               )}
@@ -119,17 +122,17 @@ export function Sidebar({
                   <button
                     key={tag.id}
                     onClick={() => onNavigateTag(tag.name)}
-                    className={`w-full flex items-center justify-between px-3 py-1.5 rounded-lg transition-colors ${
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg transition-colors ${
                       currentView === "tag" && currentTag === tag.name 
-                        ? "bg-gray-800 text-white" 
-                        : "hover:bg-gray-800/50 hover:text-white"
+                        ? "bg-[#212121] text-white" 
+                        : "hover:bg-[#212121] text-gray-300"
                     }`}
                   >
                     <div className="flex items-center space-x-3 truncate">
-                      <TagIcon className={`w-4 h-4 ${currentView === "tag" && currentTag === tag.name ? "text-blue-400" : "text-gray-500"}`} />
-                      <span className="text-sm truncate">{tag.name}</span>
+                      <TagIcon className={`w-4 h-4 ${currentView === "tag" && currentTag === tag.name ? "text-blue-400" : "text-gray-400"}`} />
+                      <span className="text-sm truncate font-medium">{tag.name}</span>
                     </div>
-                    <span className="text-xs bg-gray-800 px-1.5 py-0.5 rounded text-gray-500">
+                    <span className="text-xs bg-[#2f2f2f] px-1.5 py-0.5 rounded text-gray-400">
                       {tag._count.mediaTags}
                     </span>
                   </button>
@@ -140,38 +143,35 @@ export function Sidebar({
         </div>
       </div>
 
-      <div className="p-4 border-t border-gray-800 space-y-4">
+      <div className="p-4 space-y-4">
         {/* Storage Bar */}
         {storageStats && (
-          <div className="space-y-2 mb-4">
-            <div className="flex justify-between text-xs text-gray-400">
-              <span className="font-medium text-gray-300">Storage</span>
-              <span>{Math.round((storageStats.globalStorageBytes / storageStats.maxStorageBytes) * 100)}% full</span>
+          <div className="space-y-2 mb-4 px-2">
+            <div className="flex justify-between text-xs text-gray-400 font-medium">
+              <span>Storage</span>
+              <span>{Math.round((storageStats.globalStorageBytes / storageStats.maxStorageBytes) * 100)}%</span>
             </div>
-            <div className="w-full bg-gray-800 rounded-full h-2">
+            <div className="w-full bg-[#2f2f2f] rounded-full h-1.5">
               <div 
-                className={`h-2 rounded-full ${
+                className={`h-1.5 rounded-full ${
                   (storageStats.globalStorageBytes / storageStats.maxStorageBytes) > 0.9 
                     ? 'bg-red-500' 
-                    : 'bg-blue-500'
+                    : 'bg-[#ececec]'
                 }`}
                 style={{ width: `${Math.min((storageStats.globalStorageBytes / storageStats.maxStorageBytes) * 100, 100)}%` }}
               ></div>
-            </div>
-            <div className="text-[11px] text-gray-500 text-center">
-              {formatSize(storageStats.globalStorageBytes)} of {storageStats.maxStorageGB} GB used
             </div>
           </div>
         )}
 
         <div className="space-y-1">
-          <button className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors hover:bg-gray-800 hover:text-white text-gray-400">
+          <button className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-[#212121] text-gray-300">
             <Settings className="w-5 h-5" />
             <span className="font-medium text-sm">Settings</span>
           </button>
           <button 
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors hover:bg-gray-800 hover:text-white text-gray-400"
+            className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-[#212121] text-gray-300"
           >
             <LogOut className="w-5 h-5" />
             <span className="font-medium text-sm">Sign Out</span>
