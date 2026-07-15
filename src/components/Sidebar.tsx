@@ -18,6 +18,8 @@ interface SidebarProps {
   onNavigateTrash: () => void;
   storageStats: { globalStorageBytes: number; maxStorageBytes: number; maxStorageGB: number } | null;
   formatSize: (bytes: number) => string;
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
 }
 
 export function Sidebar({
@@ -32,12 +34,26 @@ export function Sidebar({
   onNavigateTrash,
   storageStats,
   formatSize,
+  isMobileOpen = false,
+  onCloseMobile,
 }: SidebarProps) {
   const [foldersExpanded, setFoldersExpanded] = useState(true);
   const [tagsExpanded, setTagsExpanded] = useState(true);
 
   return (
-    <div className="w-[260px] bg-[#171717] h-screen flex flex-col hidden md:flex text-[#ececec] font-sans">
+    <>
+      {/* Mobile Backdrop Overlay */}
+      {isMobileOpen && (
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity"
+          onClick={onCloseMobile}
+        />
+      )}
+
+      {/* Sidebar Container */}
+      <div className={`fixed inset-y-0 left-0 z-50 md:static w-[260px] bg-[#171717] h-screen flex-col text-[#ececec] font-sans transition-transform duration-300 ease-in-out ${
+        isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+      } flex`}>
       <div className="p-4 pt-6 pb-2">
         <div className="flex items-center space-x-3 px-2 mb-4">
           <img src="/logo.png" alt="MediaMaster Logo" className="w-8 h-8 rounded-md" />
@@ -179,5 +195,6 @@ export function Sidebar({
         </div>
       </div>
     </div>
+    </>
   );
 }

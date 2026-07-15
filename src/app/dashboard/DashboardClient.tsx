@@ -6,7 +6,7 @@ import { UploadModal } from "@/components/UploadModal";
 import { TagEditModal } from "@/components/TagEditModal";
 import { FolderCreateModal } from "@/components/FolderCreateModal";
 import { ShareModal } from "@/components/ShareModal";
-import { Star, Download, Search, Image as ImageIcon, Video as VideoIcon, Folder, ChevronRight, Tag as TagIcon, Trash2, RotateCcw, Link as LinkIcon, CheckSquare, Square, X } from "lucide-react";
+import { Star, Download, Search, Image as ImageIcon, Video as VideoIcon, Folder, ChevronRight, Tag as TagIcon, Trash2, RotateCcw, Link as LinkIcon, CheckSquare, Square, X, Menu, Plus } from "lucide-react";
 
 interface MediaTag {
   tag: {
@@ -64,6 +64,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
   const [mediaFilter, setMediaFilter] = useState<"all" | "image" | "video">("all");
 
   const [isLoading, setIsLoading] = useState(true);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const currentFolderId = view === "folder" && breadcrumbs.length > 0 
     ? breadcrumbs[breadcrumbs.length - 1].id 
@@ -136,6 +137,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
     setBreadcrumbs([]);
     setCurrentTag(null);
     setSelectedMediaIds(new Set());
+    setIsMobileSidebarOpen(false);
   };
 
   const handleNavigateTrash = () => {
@@ -143,12 +145,14 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
     setBreadcrumbs([]);
     setCurrentTag(null);
     setSelectedMediaIds(new Set());
+    setIsMobileSidebarOpen(false);
   };
 
   const handleNavigateFolder = (folderId: string, folderName: string) => {
     setView("folder");
     setCurrentTag(null);
     setSelectedMediaIds(new Set());
+    setIsMobileSidebarOpen(false);
     if (!breadcrumbs.find(b => b.id === folderId)) {
       setBreadcrumbs([{ id: folderId, name: folderName }]);
     } else {
@@ -162,6 +166,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
     setCurrentTag(tagName);
     setBreadcrumbs([]);
     setSelectedMediaIds(new Set());
+    setIsMobileSidebarOpen(false);
   };
 
   const toggleHighlight = async (id: string, currentStatus: boolean) => {
@@ -340,24 +345,35 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
         onNavigateTrash={handleNavigateTrash}
         storageStats={storageStats}
         formatSize={formatSize}
+        isMobileOpen={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
       <main className="flex-1 overflow-y-auto w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
           
           {/* Header Section */}
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-white capitalize">
-                {view === "home" ? "Media Library" : view === "trash" ? "Trash Bin" : view === "tag" ? `#${currentTag}` : breadcrumbs[breadcrumbs.length - 1]?.name || "Folder"}
-              </h1>
-              <p className="text-gray-400 text-sm mt-1">
-                {view === "trash" ? "Items here will be permanently deleted after 7 days." : "Manage and organize your church media"}
-              </p>
+          <div className="flex flex-col mb-6 gap-4">
+            <div className="flex items-center space-x-3">
+              <button 
+                onClick={() => setIsMobileSidebarOpen(true)}
+                className="md:hidden p-2 -ml-2 text-gray-400 hover:text-white rounded-lg hover:bg-[#171717] transition-colors"
+              >
+                <Menu className="w-6 h-6" />
+              </button>
+              <div>
+                <h1 className="text-2xl font-bold text-white capitalize flex items-center">
+                  {view === "home" ? "Media Library" : view === "trash" ? "Trash Bin" : view === "tag" ? `#${currentTag}` : breadcrumbs[breadcrumbs.length - 1]?.name || "Folder"}
+                </h1>
+                <p className="text-gray-400 text-sm mt-1 hidden sm:block">
+                  {view === "trash" ? "Items here will be permanently deleted after 7 days." : "Manage and organize your church media"}
+                </p>
+              </div>
             </div>
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex-1 flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1 max-w-2xl">
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-between w-full">
+              <div className="flex-1 max-w-2xl flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <div className="relative flex-1 w-full">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
                   type="text"
@@ -386,7 +402,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
               </div>
 
               {view !== "trash" && (
-                <div className="flex gap-2">
+                <div className="hidden sm:flex gap-2">
                   <button
                     onClick={() => setIsFolderCreateOpen(true)}
                     className="bg-[#171717] hover:bg-[#212121] text-[#ececec] px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
@@ -402,7 +418,6 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                 </div>
               )}
             </div>
-          </div>
           </div>
 
           {/* Breadcrumbs (only show if in a folder) */}
@@ -686,6 +701,25 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
             className="p-1 rounded-full bg-[#2f2f2f] hover:bg-gray-700 text-gray-400 transition-colors ml-4"
           >
             <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+      {/* Floating Action Button (Mobile Only) */}
+      {view !== "trash" && selectedMediaIds.size === 0 && (
+        <div className="fixed bottom-6 right-6 sm:hidden flex flex-col gap-3 z-30">
+          <button 
+            onClick={() => setIsFolderCreateOpen(true)}
+            className="w-12 h-12 bg-[#171717] border border-[#2f2f2f] text-[#ececec] rounded-full shadow-lg flex items-center justify-center hover:bg-[#212121] transition-transform active:scale-95"
+            aria-label="New Folder"
+          >
+            <Folder className="w-5 h-5" />
+          </button>
+          <button 
+            onClick={() => setIsUploadOpen(true)}
+            className="w-14 h-14 bg-white text-black rounded-full shadow-lg shadow-white/10 flex items-center justify-center hover:bg-gray-200 transition-transform active:scale-95"
+            aria-label="Upload Media"
+          >
+            <Plus className="w-7 h-7" />
           </button>
         </div>
       )}
