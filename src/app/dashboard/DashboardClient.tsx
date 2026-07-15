@@ -569,7 +569,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                                   className="text-green-500 hover:text-green-400 p-1.5 rounded transition-colors"
                                   title="Restore"
                                 >
-                                  <History className="w-4 h-4" />
+                                  <RotateCcw className="w-4 h-4" />
                                 </button>
                               )}
                             </div>
