@@ -1,0 +1,242 @@
+"use client";
+
+import { useCallback, useState } from "react";
+import { useDropzone } from "react-dropzone";
+import { X, UploadCloud, File as FileIcon, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+// @ts-ignore
+import exifr from "exifr";
+
+interface UploadModalProps {
+  onClose: () => void;
+  onUploadComplete: () => void;
+  folderId?: string | null;
+}
+
+interface UploadFile {
+  file: File;
+  progress: number;
+  status: "pending" | "uploading" | "success" | "error";
+  error?: string;
+}
+
+export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModalProps) {
+  const [files, setFiles] = useState<UploadFile[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
+  const [tags, setTags] = useState("");
+
+  const onDrop = useCallback((acceptedFiles: File[]) => {
+    setFiles((prev) => [
+      ...prev,
+      ...acceptedFiles.map((file) => ({
+        file,
+        progress: 0,
+        status: "pending" as const,
+      })),
+    ]);
+  }, []);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+
+  const handleUpload = async () => {
+    setIsUploading(true);
+    const parsedTags = tags.split(",").map((t) => t.trim()).filter(Boolean);
+
+    let allSuccess = true;
+
+    for (let i = 0; i < files.length; i++) {
+      if (files[i].status === "success") continue;
+
+      setFiles((prev) => {
+        const newFiles = [...prev];
+        newFiles[i].status = "uploading";
+        return newFiles;
+      });
+
+      try {
+        const file = files[i].file;
+        let takenAt = null;
+
+        // Try to extract EXIF if image
+        if (file.type.startsWith("image/")) {
+          try {
+            const exifData = await exifr.parse(file, ["DateTimeOriginal"]);
+            if (exifData && exifData.DateTimeOriginal) {
+              takenAt = exifData.DateTimeOriginal.toISOString();
+            }
+          } catch (e) {
+            console.error("EXIF extraction failed", e);
+          }
+        }
+
+        // 1. Get presigned URL
+        const presignRes = await fetch("/api/upload/presign", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            filename: file.name,
+            contentType: file.type,
+          }),
+        });
+
+        if (!presignRes.ok) throw new Error("Failed to get upload URL");
+        const { presignedUrl, key } = await presignRes.json();
+
+        // 2. Upload to S3 directly (using XMLHttpRequest to track progress)
+        await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open("PUT", presignedUrl, true);
+          xhr.setRequestHeader("Content-Type", file.type);
+          
+          xhr.upload.onprogress = (e) => {
+            if (e.lengthComputable) {
+              const progress = Math.round((e.loaded / e.total) * 100);
+              setFiles((prev) => {
+                const newFiles = [...prev];
+                newFiles[i].progress = progress;
+                return newFiles;
+              });
+            }
+          };
+
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) resolve(true);
+            else reject(new Error("S3 Upload Failed"));
+          };
+          xhr.onerror = () => reject(new Error("Network Error"));
+          xhr.send(file);
+        });
+
+        // 3. Save to database
+        const dbRes = await fetch("/api/media", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            original_filename: file.name,
+            s3_key: key,
+            size: file.size,
+            folderId,
+            tags: parsedTags,
+            takenAt,
+          }),
+        });
+
+        if (!dbRes.ok) throw new Error("Failed to save metadata");
+
+        setFiles((prev) => {
+          const newFiles = [...prev];
+          newFiles[i].status = "success";
+          newFiles[i].progress = 100;
+          return newFiles;
+        });
+      } catch (error: any) {
+        allSuccess = false;
+        setFiles((prev) => {
+          const newFiles = [...prev];
+          newFiles[i].status = "error";
+          newFiles[i].error = error.message;
+          return newFiles;
+        });
+      }
+    }
+
+    setIsUploading(false);
+    if (allSuccess) {
+      onUploadComplete();
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-75 flex items-center justify-center p-4">
+      <div className="bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full border border-gray-700 max-h-[90vh] flex flex-col">
+        <div className="flex justify-between items-center p-6 border-b border-gray-700">
+          <h3 className="text-xl font-semibold text-white">Upload Media</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-white" disabled={isUploading}>
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+
+        <div className="p-6 flex-1 overflow-y-auto space-y-6">
+          <div
+            {...getRootProps()}
+            className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
+              isDragActive
+                ? "border-blue-500 bg-blue-500/10"
+                : "border-gray-600 hover:border-gray-500 bg-gray-900"
+            }`}
+          >
+            <input {...getInputProps()} />
+            <UploadCloud className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-300">
+              Drag & drop files here, or click to select files
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              Supports raw images and large video files directly to S3.
+            </p>
+          </div>
+
+          {files.length > 0 && (
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Apply Tags (comma separated)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. worship, crowd, sunday-service"
+                  value={tags}
+                  onChange={(e) => setTags(e.target.value)}
+                  className="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                  disabled={isUploading}
+                />
+              </div>
+
+              <div className="space-y-2">
+                {files.map((fileObj, idx) => (
+                  <div key={idx} className="bg-gray-900 p-3 rounded-lg border border-gray-700 flex items-center space-x-4">
+                    <FileIcon className="w-8 h-8 text-gray-500 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-200 truncate">
+                        {fileObj.file.name}
+                      </p>
+                      <div className="w-full bg-gray-700 rounded-full h-1.5 mt-2">
+                        <div
+                          className={`h-1.5 rounded-full ${
+                            fileObj.status === "error" ? "bg-red-500" : "bg-blue-500"
+                          }`}
+                          style={{ width: `${fileObj.progress}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                    <div className="flex-shrink-0 w-8 flex justify-center">
+                      {fileObj.status === "uploading" && <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />}
+                      {fileObj.status === "success" && <CheckCircle className="w-5 h-5 text-green-500" />}
+                      {fileObj.status === "error" && <AlertCircle className="w-5 h-5 text-red-500" title={fileObj.error} />}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 border-t border-gray-700 flex justify-end space-x-4 bg-gray-800 rounded-b-xl">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-md text-sm font-medium text-gray-300 hover:text-white hover:bg-gray-700 transition-colors"
+            disabled={isUploading}
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleUpload}
+            disabled={files.length === 0 || isUploading}
+            className="px-4 py-2 rounded-md text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none transition-colors disabled:opacity-50 flex items-center"
+          >
+            {isUploading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+            {isUploading ? "Uploading..." : "Upload Files"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
