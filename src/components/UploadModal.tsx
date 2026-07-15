@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef } from "react";
 import { useDropzone } from "react-dropzone";
-import { X, UploadCloud, File as FileIcon, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { X, UploadCloud, File as FileIcon, CheckCircle, AlertCircle, Loader2, Folder as FolderIcon } from "lucide-react";
 // @ts-ignore
 import exifr from "exifr";
 
@@ -23,6 +23,35 @@ export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModal
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [tags, setTags] = useState("");
+
+  const folderInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const fileList = Array.from(e.target.files);
+      const validFiles = fileList.filter(f => f.type.startsWith("image/") || f.type.startsWith("video/"));
+      const rejectedFiles = fileList.filter(f => !(f.type.startsWith("image/") || f.type.startsWith("video/")));
+      
+      setFiles((prev) => [
+        ...prev,
+        ...validFiles.map((file) => {
+          const isTooLarge = file.size > 1 * 1024 * 1024 * 1024;
+          return {
+            file,
+            progress: 0,
+            status: isTooLarge ? "error" : "pending",
+            error: isTooLarge ? "File is larger than 1GB" : undefined,
+          };
+        }),
+        ...rejectedFiles.map((file) => ({
+          file,
+          progress: 0,
+          status: "error" as const,
+          error: "Invalid file type. Only images and videos allowed.",
+        })),
+      ]);
+    }
+  };
 
   const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
     // Add accepted files
@@ -208,22 +237,45 @@ export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModal
         </div>
 
         <div className="p-6 flex-1 overflow-y-auto space-y-6">
-          <div
-            {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
-              isDragActive
-                ? "border-blue-500 bg-blue-500/10"
-                : "border-gray-600 hover:border-gray-500 bg-gray-900"
-            }`}
-          >
-            <input {...getInputProps()} />
-            <UploadCloud className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-300">
-              Drag & drop files here, or click to select files
-            </p>
-            <p className="text-sm text-gray-500 mt-2">
-              Supports raw images and large video files directly to S3.
-            </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors flex flex-col justify-center items-center ${
+                isDragActive
+                  ? "border-blue-500 bg-blue-500/10"
+                  : "border-gray-600 hover:border-gray-500 bg-gray-900"
+              }`}
+            >
+              <input {...getInputProps()} />
+              <UploadCloud className="w-12 h-12 text-gray-400 mb-4" />
+              <p className="text-gray-300">
+                Drag & drop files here, or click to select
+              </p>
+              <p className="text-sm text-gray-500 mt-2">
+                Supports raw images and large video files.
+              </p>
+            </div>
+
+            <div
+              onClick={() => folderInputRef.current?.click()}
+              className="border-2 border-gray-700 rounded-lg p-10 text-center cursor-pointer hover:border-blue-500/50 hover:bg-gray-800 bg-gray-900 transition-colors flex flex-col items-center justify-center group"
+            >
+              <input 
+                type="file" 
+                ref={folderInputRef} 
+                onChange={handleFolderSelect} 
+                className="hidden" 
+                // @ts-ignore - webkitdirectory is non-standard but supported
+                webkitdirectory="true" 
+                directory="" 
+                multiple
+              />
+              <FolderIcon className="w-12 h-12 text-blue-500 mb-4 group-hover:scale-110 transition-transform" />
+              <p className="text-gray-300 font-medium">Extract Memory Card</p>
+              <p className="text-sm text-gray-500 mt-2">
+                Select a folder or USB drive to automatically scan and extract all media.
+              </p>
+            </div>
           </div>
 
           {files.length > 0 && (
