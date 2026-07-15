@@ -61,6 +61,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
   const [storageStats, setStorageStats] = useState<{globalStorageBytes: number, folderStorageBytes: number, maxStorageBytes: number, maxStorageGB: number} | null>(null);
   
   const [searchQuery, setSearchQuery] = useState("");
+  const [mediaFilter, setMediaFilter] = useState<"all" | "image" | "video">("all");
 
   const currentFolderId = view === "folder" && breadcrumbs.length > 0 
     ? breadcrumbs[breadcrumbs.length - 1].id 
@@ -292,6 +293,11 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
   };
 
   const filteredMedia = media.filter((item) => {
+    // 1. Check filter type
+    if (mediaFilter === "image" && !item.original_filename.match(/\.(jpg|jpeg|png|gif|webp|heic)$/i)) return false;
+    if (mediaFilter === "video" && !item.original_filename.match(/\.(mp4|mov|avi|mkv|webm)$/i)) return false;
+    
+    // 2. Check search query
     if (view === "tag" && currentTag) {
       if (!item.mediaTags.some(t => t.tag.name === currentTag)) return false;
     }
@@ -350,6 +356,24 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                   className="bg-gray-800 border border-gray-700 text-white pl-10 pr-4 py-2 rounded-lg text-sm focus:outline-none focus:border-blue-500 w-48 sm:w-64 transition-colors"
                 />
               </div>
+
+              {/* Media Filter Tabs */}
+              <div className="flex bg-gray-800 p-1 rounded-lg border border-gray-700">
+                {(["all", "image", "video"] as const).map((filterType) => (
+                  <button
+                    key={filterType}
+                    onClick={() => setMediaFilter(filterType)}
+                    className={`px-4 py-1.5 text-sm font-medium rounded-md capitalize transition-colors ${
+                      mediaFilter === filterType 
+                        ? 'bg-gray-700 text-white shadow-sm' 
+                        : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/50'
+                    }`}
+                  >
+                    {filterType}
+                  </button>
+                ))}
+              </div>
+
               {view !== "trash" && (
                 <>
                   <button
