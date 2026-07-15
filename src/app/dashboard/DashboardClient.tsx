@@ -419,6 +419,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
               )}
             </div>
           </div>
+        </div>
 
           {/* Breadcrumbs (only show if in a folder) */}
           {view === "folder" && breadcrumbs.length > 0 && (
