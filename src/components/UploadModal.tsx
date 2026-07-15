@@ -39,7 +39,7 @@ export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModal
           return {
             file,
             progress: 0,
-            status: isTooLarge ? "error" : "pending",
+            status: (isTooLarge ? "error" : "pending") as "error" | "pending",
             error: isTooLarge ? "File is larger than 1GB" : undefined,
           };
         }),
