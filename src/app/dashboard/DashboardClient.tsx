@@ -667,18 +667,23 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
           <button onClick={selectAll} className="text-gray-400 hover:text-white text-sm font-medium transition-colors">
             {selectedMediaIds.size === filteredMedia.length ? 'Deselect All' : 'Select All'}
           </button>
-            </button>
-            <button 
-              onClick={handleBulkDelete}
-              className="bg-red-500/10 hover:bg-red-500/20 text-red-400 px-4 py-1.5 rounded-full text-sm font-medium flex items-center space-x-2 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              <span>Delete</span>
-            </button>
-          </div>
+          
+          <button onClick={handleBulkDownload} className="flex items-center space-x-2 text-gray-400 hover:text-white text-sm font-medium transition-colors">
+            <Download className="w-4 h-4" />
+            <span>Download</span>
+          </button>
+
+          <button 
+            onClick={handleBulkDelete}
+            className="text-red-400 hover:text-red-300 text-sm font-medium flex items-center space-x-2 transition-colors"
+          >
+            <Trash2 className="w-4 h-4" />
+            <span>Delete</span>
+          </button>
+          
           <button 
             onClick={() => setSelectedMediaIds(new Set())}
-            className="absolute -top-2 -right-2 bg-gray-800 border border-gray-700 text-gray-400 hover:text-white p-1 rounded-full shadow-lg"
+            className="p-1 rounded-full bg-[#2f2f2f] hover:bg-gray-700 text-gray-400 transition-colors ml-4"
           >
             <X className="w-4 h-4" />
           </button>
