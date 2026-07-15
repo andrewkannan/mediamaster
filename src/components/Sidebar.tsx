@@ -16,6 +16,8 @@ interface SidebarProps {
   onNavigateFolder: (id: string, name: string) => void;
   onNavigateTag: (name: string) => void;
   onNavigateTrash: () => void;
+  storageStats: { globalStorageBytes: number; maxStorageBytes: number; maxStorageGB: number } | null;
+  formatSize: (bytes: number) => string;
 }
 
 export function Sidebar({
@@ -28,6 +30,8 @@ export function Sidebar({
   onNavigateFolder,
   onNavigateTag,
   onNavigateTrash,
+  storageStats,
+  formatSize,
 }: SidebarProps) {
   const [foldersExpanded, setFoldersExpanded] = useState(true);
   const [tagsExpanded, setTagsExpanded] = useState(true);
@@ -136,18 +140,43 @@ export function Sidebar({
         </div>
       </div>
 
-      <div className="p-4 border-t border-gray-800 space-y-1">
-        <button className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors hover:bg-gray-800 hover:text-white text-gray-400">
-          <Settings className="w-5 h-5" />
-          <span className="font-medium text-sm">Settings</span>
-        </button>
-        <button 
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors hover:bg-gray-800 hover:text-white text-gray-400"
-        >
-          <LogOut className="w-5 h-5" />
-          <span className="font-medium text-sm">Sign Out</span>
-        </button>
+      <div className="p-4 border-t border-gray-800 space-y-4">
+        {/* Storage Bar */}
+        {storageStats && (
+          <div className="space-y-2 mb-4">
+            <div className="flex justify-between text-xs text-gray-400">
+              <span className="font-medium text-gray-300">Storage</span>
+              <span>{Math.round((storageStats.globalStorageBytes / storageStats.maxStorageBytes) * 100)}% full</span>
+            </div>
+            <div className="w-full bg-gray-800 rounded-full h-2">
+              <div 
+                className={`h-2 rounded-full ${
+                  (storageStats.globalStorageBytes / storageStats.maxStorageBytes) > 0.9 
+                    ? 'bg-red-500' 
+                    : 'bg-blue-500'
+                }`}
+                style={{ width: `${Math.min((storageStats.globalStorageBytes / storageStats.maxStorageBytes) * 100, 100)}%` }}
+              ></div>
+            </div>
+            <div className="text-[11px] text-gray-500 text-center">
+              {formatSize(storageStats.globalStorageBytes)} of {storageStats.maxStorageGB} GB used
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-1">
+          <button className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors hover:bg-gray-800 hover:text-white text-gray-400">
+            <Settings className="w-5 h-5" />
+            <span className="font-medium text-sm">Settings</span>
+          </button>
+          <button 
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="w-full flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors hover:bg-gray-800 hover:text-white text-gray-400"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium text-sm">Sign Out</span>
+          </button>
+        </div>
       </div>
     </div>
   );

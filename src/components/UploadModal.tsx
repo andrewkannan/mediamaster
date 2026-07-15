@@ -24,7 +24,8 @@ export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModal
   const [isUploading, setIsUploading] = useState(false);
   const [tags, setTags] = useState("");
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
+  const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
+    // Add accepted files
     setFiles((prev) => [
       ...prev,
       ...acceptedFiles.map((file) => ({
@@ -32,10 +33,23 @@ export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModal
         progress: 0,
         status: "pending" as const,
       })),
+      ...fileRejections.map((rejection) => ({
+        file: rejection.file,
+        progress: 0,
+        status: "error" as const,
+        error: rejection.errors[0]?.message || "Invalid file",
+      })),
     ]);
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop });
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
+    onDrop,
+    accept: {
+      'image/*': [],
+      'video/*': []
+    },
+    maxSize: 1 * 1024 * 1024 * 1024, // 1GB
+  });
 
   const handleUpload = async () => {
     setIsUploading(true);
@@ -43,8 +57,47 @@ export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModal
 
     let allSuccess = true;
 
+    // --- 1. Deduplication Pre-Check ---
+    const pendingFiles = files.filter(f => f.status === "pending");
+    let duplicateIds: string[] = []; // store names of duplicates
+
+    if (pendingFiles.length > 0) {
+      try {
+        const checkRes = await fetch("/api/upload/check-duplicates", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            files: pendingFiles.map(f => ({ name: f.file.name, size: f.file.size }))
+          })
+        });
+        const checkData = await checkRes.json();
+        const duplicates: { original_filename: string, size: number }[] = checkData.duplicates || [];
+        
+        if (duplicates.length > 0) {
+          duplicateIds = duplicates.map(d => d.original_filename + '-' + d.size);
+          // Optimistically update UI to show skipped items instantly
+          setFiles(prev => prev.map(f => {
+            if (f.status === "pending" && duplicateIds.includes(f.file.name + '-' + f.file.size)) {
+              return { ...f, status: "error", error: "Skipped (Duplicate)" };
+            }
+            return f;
+          }));
+        }
+      } catch (e) {
+        console.error("Failed to check duplicates", e);
+      }
+    }
+    // ----------------------------------
+
+    // 2. Upload only non-duplicates
     for (let i = 0; i < files.length; i++) {
-      if (files[i].status === "success") continue;
+      // Access the freshest file object
+      const file = files[i].file;
+      
+      // Skip if it was caught as duplicate
+      if (duplicateIds.includes(file.name + '-' + file.size)) continue;
+      // Skip if already success or error (from dropzone rejection)
+      if (files[i].status !== "pending") continue;
 
       setFiles((prev) => {
         const newFiles = [...prev];
@@ -53,7 +106,6 @@ export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModal
       });
 
       try {
-        const file = files[i].file;
         let takenAt = null;
 
         // Try to extract EXIF if image
@@ -81,7 +133,7 @@ export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModal
         if (!presignRes.ok) throw new Error("Failed to get upload URL");
         const { presignedUrl, key } = await presignRes.json();
 
-        // 2. Upload to S3 directly (using XMLHttpRequest to track progress)
+        // 2. Upload to S3 directly
         await new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
           xhr.open("PUT", presignedUrl, true);

@@ -58,6 +58,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
   const [shareModalData, setShareModalData] = useState<{id: string, type: 'folder' | 'media', title: string} | null>(null);
   
   const [selectedMediaIds, setSelectedMediaIds] = useState<Set<string>>(new Set());
+  const [storageStats, setStorageStats] = useState<{globalStorageBytes: number, folderStorageBytes: number, maxStorageBytes: number, maxStorageGB: number} | null>(null);
   
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -82,6 +83,16 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
       const tagRes = await fetch("/api/tags");
       const tagData = await tagRes.json();
       if (tagData.tags) setTags(tagData.tags);
+      // Also fetch storage stats
+      const storageUrl = new URL("/api/storage", window.location.origin);
+      const currentFolder = breadcrumbs[breadcrumbs.length - 1];
+      if (view === "folder" && currentFolder) {
+        storageUrl.searchParams.set("folderId", currentFolder.id);
+      }
+      const storageRes = await fetch(storageUrl.toString());
+      if (storageRes.ok) {
+        setStorageStats(await storageRes.json());
+      }
     } catch (e) {
       console.error("Failed to fetch sidebar data", e);
     }
@@ -310,6 +321,8 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
         onNavigateFolder={handleNavigateFolder}
         onNavigateTag={handleNavigateTag}
         onNavigateTrash={handleNavigateTrash}
+        storageStats={storageStats}
+        formatSize={formatSize}
       />
 
       <main className="flex-1 overflow-y-auto w-full">
@@ -373,6 +386,11 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                   </button>
                 </div>
               ))}
+              {view === "folder" && storageStats && (
+                <span className="bg-gray-800 text-gray-300 text-xs px-2.5 py-1 rounded-full font-medium ml-4 border border-gray-700 shadow-sm">
+                  {formatSize(storageStats.folderStorageBytes)}
+                </span>
+              )}
             </div>
           )}
 
