@@ -565,7 +565,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                                 </>
                               ) : (
                                 <button
-                                  onClick={() => restoreMedia(item.id)}
+                                  onClick={() => deleteMedia(item.id, false)}
                                   className="text-green-500 hover:text-green-400 p-1.5 rounded transition-colors"
                                   title="Restore"
                                 >
