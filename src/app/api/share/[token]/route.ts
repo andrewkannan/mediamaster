@@ -30,7 +30,7 @@ export async function GET(
     }
 
     // If it's a folder, we need to fetch all media inside that folder
-    let folderMedia = [];
+    let folderMedia: any[] = [];
     if (shareLink.folderId) {
       folderMedia = await prisma.media.findMany({
         where: { folderId: shareLink.folderId, deletedAt: null },

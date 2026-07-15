@@ -33,7 +33,7 @@ export default async function SharePage({ params }: { params: Promise<{ token: s
     );
   }
 
-  let folderMedia = [];
+  let folderMedia: any[] = [];
   if (shareLink.folderId) {
     folderMedia = await prisma.media.findMany({
       where: { folderId: shareLink.folderId, deletedAt: null },
