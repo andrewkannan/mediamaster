@@ -66,8 +66,9 @@ model Folder {
   parent    Folder?  @relation("FolderToFolder", fields: [parentId], references: [id])
   children  Folder[] @relation("FolderToFolder")
   media     Media[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 }
 
 model Tag {
@@ -96,6 +97,7 @@ model Media {
   
   createdAt         DateTime   @default(now())
   takenAt           DateTime?  // From EXIF data
+  deletedAt         DateTime?
 }
 
 model MediaTag {

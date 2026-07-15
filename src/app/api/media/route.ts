@@ -82,7 +82,9 @@ export async function GET(req: NextRequest) {
     const folderId = searchParams.get("folderId");
     
     const media = await prisma.media.findMany({
-      where: folderId ? { folderId } : { folderId: null },
+      where: folderId 
+        ? { folderId, deletedAt: null } 
+        : { folderId: null, deletedAt: null },
       orderBy: [
         { is_highlighted: "desc" },
         { createdAt: "desc" },
