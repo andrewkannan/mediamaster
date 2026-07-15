@@ -674,34 +674,34 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
 
       {/* Floating Bulk Action Bar */}
       {selectedMediaIds.size > 0 && (
-        <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-[#171717] border border-[#2f2f2f] rounded-full shadow-2xl px-6 py-3 flex items-center space-x-6 z-40">
-          <span className="text-sm font-medium text-white">
-            {selectedMediaIds.size} selected
+        <div className="fixed bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 bg-[#171717] border border-[#2f2f2f] rounded-full shadow-2xl px-4 sm:px-6 py-2.5 sm:py-3 flex items-center gap-3 sm:gap-6 z-40 w-max max-w-[95vw] overflow-x-auto no-scrollbar">
+          <span className="text-xs sm:text-sm font-medium text-white whitespace-nowrap">
+            {selectedMediaIds.size} <span className="hidden sm:inline">selected</span>
           </span>
-          <div className="h-4 w-px bg-gray-700"></div>
+          <div className="h-4 w-px bg-gray-700 shrink-0"></div>
           
-          <button onClick={selectAll} className="text-gray-400 hover:text-white text-sm font-medium transition-colors">
+          <button onClick={selectAll} className="text-gray-400 hover:text-white text-xs sm:text-sm font-medium transition-colors whitespace-nowrap shrink-0">
             {selectedMediaIds.size === filteredMedia.length ? 'Deselect All' : 'Select All'}
           </button>
           
-          <button onClick={handleBulkDownload} className="flex items-center space-x-2 text-gray-400 hover:text-white text-sm font-medium transition-colors">
-            <Download className="w-4 h-4" />
-            <span>Download</span>
+          <button onClick={handleBulkDownload} className="flex items-center space-x-1 sm:space-x-2 text-gray-400 hover:text-white text-xs sm:text-sm font-medium transition-colors shrink-0">
+            <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Download</span>
           </button>
 
           <button 
             onClick={handleBulkDelete}
-            className="text-red-400 hover:text-red-300 text-sm font-medium flex items-center space-x-2 transition-colors"
+            className="text-red-400 hover:text-red-300 text-xs sm:text-sm font-medium flex items-center space-x-1 sm:space-x-2 transition-colors shrink-0"
           >
-            <Trash2 className="w-4 h-4" />
-            <span>Delete</span>
+            <Trash2 className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">Delete</span>
           </button>
           
           <button 
             onClick={() => setSelectedMediaIds(new Set())}
-            className="p-1 rounded-full bg-[#2f2f2f] hover:bg-gray-700 text-gray-400 transition-colors ml-4"
+            className="p-1 rounded-full bg-[#2f2f2f] hover:bg-gray-700 text-gray-400 transition-colors sm:ml-4 shrink-0"
           >
-            <X className="w-4 h-4" />
+            <X className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           </button>
         </div>
       )}
