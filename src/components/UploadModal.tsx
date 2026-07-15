@@ -210,7 +210,7 @@ export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModal
                     <div className="flex-shrink-0 w-8 flex justify-center">
                       {fileObj.status === "uploading" && <Loader2 className="w-5 h-5 text-blue-500 animate-spin" />}
                       {fileObj.status === "success" && <CheckCircle className="w-5 h-5 text-green-500" />}
-                      {fileObj.status === "error" && <AlertCircle className="w-5 h-5 text-red-500" title={fileObj.error} />}
+                      {fileObj.status === "error" && <span title={fileObj.error}><AlertCircle className="w-5 h-5 text-red-500" /></span>}
                     </div>
                   </div>
                 ))}
