@@ -541,13 +541,13 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                                   >
                                     <TagIcon className="w-4 h-4 text-white" />
                                   </button>
-                                  <button
-                                    onClick={() => handleDownload(item)}
-                                    className="text-gray-400 hover:text-white p-1.5 rounded transition-colors"
+                                  <a
+                                    href={`/api/media/${item.id}/download`}
+                                    className="text-gray-400 hover:text-white p-1.5 rounded transition-colors block"
                                     title="Download Original"
                                   >
                                     <Download className="w-4 h-4" />
-                                  </button>
+                                  </a>
                                   <button
                                     onClick={() => setShareModalData({ id: item.id, type: 'media', title: item.original_filename })}
                                     className="text-gray-400 hover:text-white p-1.5 rounded transition-colors"
