@@ -80,11 +80,19 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const folderId = searchParams.get("folderId");
+    const view = searchParams.get("view");
     
+    let whereClause: any = { deletedAt: null };
+    if (view === "trash") {
+      whereClause = { deletedAt: { not: null } };
+    } else if (folderId) {
+      whereClause = { folderId, deletedAt: null };
+    } else {
+      whereClause = { folderId: null, deletedAt: null };
+    }
+
     const media = await prisma.media.findMany({
-      where: folderId 
-        ? { folderId, deletedAt: null } 
-        : { folderId: null, deletedAt: null },
+      where: whereClause,
       orderBy: [
         { is_highlighted: "desc" },
         { createdAt: "desc" },
