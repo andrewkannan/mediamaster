@@ -346,7 +346,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
 
                       return (
                         <div key={item.id} className="bg-gray-900 rounded-xl overflow-hidden border border-gray-800 group hover:border-gray-600 transition-all duration-200 shadow-sm hover:shadow-xl relative flex flex-col">
-                          <div className="aspect-w-1 aspect-h-1 bg-gray-950 relative">
+                          <div className="aspect-square bg-gray-950 relative">
                             {video ? (
                               <div className="absolute inset-0 flex items-center justify-center">
                                 <VideoIcon className="w-12 h-12 text-gray-700" />
