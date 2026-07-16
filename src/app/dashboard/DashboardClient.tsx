@@ -66,6 +66,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
   const [mediaFilter, setMediaFilter] = useState<"all" | "image" | "video">("all");
 
   const [isLoading, setIsLoading] = useState(true);
+  const [isActionLoading, setIsActionLoading] = useState(false);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   const currentFolderId = view === "folder" && breadcrumbs.length > 0 
