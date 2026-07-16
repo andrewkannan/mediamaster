@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState, useRef } from "react";
+import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
 import { X, UploadCloud, File as FileIcon, CheckCircle, AlertCircle, Loader2, Folder as FolderIcon } from "lucide-react";
 // @ts-ignore
