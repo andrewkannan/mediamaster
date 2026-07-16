@@ -192,6 +192,26 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
     }
   };
 
+  const handleEmptyTrash = async () => {
+    if (!confirm("Are you sure you want to permanently delete ALL items in the trash? This action cannot be undone.")) return;
+    
+    setIsActionLoading(true);
+    try {
+      const res = await fetch("/api/media/trash/empty", {
+        method: "POST",
+      });
+      if (!res.ok) throw new Error("Failed to empty trash");
+      fetchData();
+      fetchSidebarData();
+      setSelectedMediaIds(new Set());
+    } catch (e) {
+      console.error(e);
+      alert("Failed to empty trash");
+    } finally {
+      setIsActionLoading(false);
+    }
+  };
+
   const deleteMedia = async (id: string, isDeleted: boolean = true) => {
     if (isDeleted && !confirm("Are you sure you want to delete this media? It will be kept in trash for 7 days.")) return;
     
@@ -401,13 +421,25 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
               >
                 <Menu className="w-6 h-6" />
               </button>
-              <div>
-                <h1 className="text-2xl font-bold text-white capitalize flex items-center">
-                  {view === "home" ? "Media Library" : view === "trash" ? "Trash Bin" : view === "settings" ? "System Settings" : view === "tag" ? `#${currentTag}` : breadcrumbs[breadcrumbs.length - 1]?.name || "Folder"}
-                </h1>
-                <p className="text-gray-400 text-sm mt-1 hidden sm:block">
-                  {view === "trash" ? "Items here will be permanently deleted after 7 days." : "Manage and organize your church media"}
-                </p>
+              <div className="flex-1 flex justify-between items-start w-full">
+                <div>
+                  <h1 className="text-2xl font-bold text-white capitalize flex items-center">
+                    {view === "home" ? "Media Library" : view === "trash" ? "Trash Bin" : view === "settings" ? "System Settings" : view === "tag" ? `#${currentTag}` : breadcrumbs[breadcrumbs.length - 1]?.name || "Folder"}
+                  </h1>
+                  <p className="text-gray-400 text-sm mt-1 hidden sm:block">
+                    {view === "trash" ? "Items here will be permanently deleted after 7 days." : "Manage and organize your church media"}
+                  </p>
+                </div>
+                {view === "trash" && media.length > 0 && (
+                  <button 
+                    onClick={handleEmptyTrash} 
+                    disabled={isActionLoading}
+                    className="flex items-center gap-2 text-sm px-3 py-1.5 bg-red-500/10 text-red-500 hover:bg-red-500/20 rounded-lg transition-colors border border-red-500/20 disabled:opacity-50 flex-shrink-0"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Empty Trash
+                  </button>
+                )}
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-between w-full">
