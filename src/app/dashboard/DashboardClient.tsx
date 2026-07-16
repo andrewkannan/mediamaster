@@ -578,7 +578,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                                 fill
                                 sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
                                 className="absolute inset-0 object-cover image-fade-in"
-                                unoptimized={true}
+                                unoptimized={video}
                               />
                             )}
                             

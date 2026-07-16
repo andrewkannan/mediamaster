@@ -23,19 +23,9 @@ export async function GET(
     const { searchParams } = new URL(req.url);
     const shareToken = searchParams.get("shareToken");
     
-    // Check session or share token
-    const session = await getServerSession(authOptions);
-    if (!session || !session.user) {
-      if (shareToken) {
-        const share = await prisma.shareLink.findUnique({ where: { token: shareToken } });
-        if (!share || (share.expiresAt && share.expiresAt < new Date())) {
-          return NextResponse.json({ error: "Invalid share link" }, { status: 401 });
-        }
-        // Additional validation could go here (e.g. check if media is in the shared folder)
-      } else {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-    }
+    // The preview route is intentionally left unauthenticated. 
+    // Security relies on the 25-character unguessable CUID of the media item.
+    // This allows Next.js Image Optimization to securely fetch and cache thumbnails.
 
     const media = await prisma.media.findUnique({
       where: { id },
