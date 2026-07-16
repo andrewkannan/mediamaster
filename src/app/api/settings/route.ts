@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 export async function PUT(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    if (!session || session.user.role !== "Admin") {
+    if (!session || session.user?.role !== "Admin") {
       // For simplicity, allow if not strict role, but ideally check Admin
       // We will allow users to edit for now, or just require auth
     }
