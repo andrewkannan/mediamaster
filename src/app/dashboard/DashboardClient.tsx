@@ -578,9 +578,25 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                               <p className="text-xs font-semibold text-white/90 truncate drop-shadow-md">
                                 {item.original_filename}
                               </p>
-                              <p className="text-[10px] text-gray-400 drop-shadow-md font-medium mt-0.5">
-                                {formatSize(item.size)} {item.mediaTags.length > 0 && `• ${item.mediaTags.length} tag${item.mediaTags.length > 1 ? 's' : ''}`}
-                              </p>
+                              <div className="flex items-center gap-2 mt-1">
+                                <p className="text-[10px] text-gray-300 drop-shadow-md font-medium shrink-0">
+                                  {formatSize(item.size)}
+                                </p>
+                                {item.mediaTags.length > 0 && (
+                                  <div className="flex gap-1 overflow-hidden h-[18px]">
+                                    {item.mediaTags.map((t) => {
+                                      const colors = ['bg-blue-500/80 text-white', 'bg-purple-500/80 text-white', 'bg-emerald-500/80 text-white', 'bg-rose-500/80 text-white', 'bg-amber-500/80 text-white', 'bg-indigo-500/80 text-white', 'bg-cyan-500/80 text-white'];
+                                      const charSum = t.tag.name.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+                                      const colorClass = colors[charSum % colors.length];
+                                      return (
+                                        <span key={t.tag.name} className={`px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold uppercase tracking-wider backdrop-blur-md border border-white/20 truncate max-w-[70px] flex items-center ${colorClass}`}>
+                                          {t.tag.name}
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
                             </div>
 
                             {/* Action Buttons overlaid on image center on hover/select */}
