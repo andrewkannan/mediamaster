@@ -137,3 +137,9 @@ model ShareLink {
   createdById String
   createdBy   User     @relation("CreatedShareLinks", fields: [createdById], references: [id])
 }
+
+model SystemSetting {
+  key       String   @id
+  value     String   // Stored as JSON string
+  updatedAt DateTime @updatedAt
+}

@@ -23,14 +23,32 @@ export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModal
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [tags, setTags] = useState("");
+  const [allowedTypes, setAllowedTypes] = useState<string[]>(["image", "video"]);
+
+  // Fetch settings on mount
+  React.useEffect(() => {
+    fetch("/api/settings")
+      .then(res => res.json())
+      .then(data => {
+        if (data.allowedFileTypes) {
+          setAllowedTypes(data.allowedFileTypes);
+        }
+      })
+      .catch(console.error);
+  }, []);
+
+  const isTypeAllowed = (type: string) => {
+    if (allowedTypes.includes("all")) return true;
+    return allowedTypes.some(allowed => type.startsWith(`${allowed}/`));
+  };
 
   const folderInputRef = useRef<HTMLInputElement>(null);
 
   const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const fileList = Array.from(e.target.files);
-      const validFiles = fileList.filter(f => f.type.startsWith("image/") || f.type.startsWith("video/"));
-      const rejectedFiles = fileList.filter(f => !(f.type.startsWith("image/") || f.type.startsWith("video/")));
+      const validFiles = fileList.filter(f => isTypeAllowed(f.type));
+      // Silently skip rejected files, do not add them to the queue
       
       setFiles((prev) => [
         ...prev,
@@ -43,40 +61,32 @@ export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModal
             error: isTooLarge ? "File is larger than 1GB" : undefined,
           };
         }),
-        ...rejectedFiles.map((file) => ({
-          file,
-          progress: 0,
-          status: "error" as const,
-          error: "Invalid file type. Only images and videos allowed.",
-        })),
       ]);
     }
   };
 
   const onDrop = useCallback((acceptedFiles: File[], fileRejections: any[]) => {
+    const validFiles = acceptedFiles.filter(f => isTypeAllowed(f.type));
+    
     // Add accepted files
     setFiles((prev) => [
       ...prev,
-      ...acceptedFiles.map((file) => ({
+      ...validFiles.map((file) => ({
         file,
         progress: 0,
         status: "pending" as const,
       })),
-      ...fileRejections.map((rejection) => ({
-        file: rejection.file,
-        progress: 0,
-        status: "error" as const,
-        error: rejection.errors[0]?.message || "Invalid file",
-      })),
+        // We ignore file rejections completely to skip them silently
     ]);
-  }, []);
+  }, [allowedTypes]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
-    accept: {
-      'image/*': [],
-      'video/*': []
-    },
+    // Only accept allowed types for Dropzone
+    accept: allowedTypes.includes("all") ? undefined : allowedTypes.reduce((acc, type) => {
+      acc[`${type}/*`] = [];
+      return acc;
+    }, {} as Record<string, string[]>),
     maxSize: 1 * 1024 * 1024 * 1024, // 1GB
   });
 

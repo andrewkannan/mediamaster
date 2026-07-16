@@ -4,7 +4,7 @@ import { Home, Folder, Tag as TagIcon, Trash2, Settings, ChevronDown, ChevronRig
 import { signOut } from "next-auth/react";
 import { useState } from "react";
 
-export type ViewType = "home" | "folder" | "trash" | "tag";
+export type ViewType = "home" | "folder" | "trash" | "tag" | "settings";
 
 interface SidebarProps {
   currentView: ViewType;
@@ -20,6 +20,7 @@ interface SidebarProps {
   formatSize: (bytes: number) => string;
   isMobileOpen?: boolean;
   onCloseMobile?: () => void;
+  onNavigateSettings?: () => void;
 }
 
 export function Sidebar({
@@ -36,6 +37,7 @@ export function Sidebar({
   formatSize,
   isMobileOpen = false,
   onCloseMobile,
+  onNavigateSettings,
 }: SidebarProps) {
   const [foldersExpanded, setFoldersExpanded] = useState(true);
   const [tagsExpanded, setTagsExpanded] = useState(true);
@@ -181,7 +183,15 @@ export function Sidebar({
         )}
 
         <div className="space-y-1">
-          <button className="w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-[#212121] text-gray-300">
+          <button 
+            onClick={() => {
+              if (onNavigateSettings) onNavigateSettings();
+              if (onCloseMobile) onCloseMobile();
+            }}
+            className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-colors ${
+              currentView === "settings" ? "bg-blue-600/20 text-blue-500" : "hover:bg-[#212121] text-gray-300"
+            }`}
+          >
             <Settings className="w-5 h-5" />
             <span className="font-medium text-sm">Settings</span>
           </button>
