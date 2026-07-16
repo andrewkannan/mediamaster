@@ -663,8 +663,10 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                   </div>
                 </div>
               )}
-            </>
+            </div>
           )}
+          </>
+        )}
         </div>
       </main>
 
