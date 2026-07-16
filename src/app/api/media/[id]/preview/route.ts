@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import prisma from "@/lib/prisma";
 
 const s3Client = new S3Client({
@@ -40,13 +39,21 @@ export async function GET(
       Key: media.s3_key,
     });
 
-    const presignedUrl = await getSignedUrl(s3Client, command, {
-      expiresIn: 3600, // 1 hour
-    });
+    const s3Response = await s3Client.send(command);
 
-    // We redirect the GET request to the S3 presigned URL
-    // The browser will follow this redirect and render the image!
-    return NextResponse.redirect(presignedUrl);
+    if (!s3Response.Body) {
+      return NextResponse.json({ error: "Empty file" }, { status: 404 });
+    }
+
+    // Convert the AWS SDK stream to a Web ReadableStream
+    const stream = s3Response.Body.transformToWebStream();
+
+    return new NextResponse(stream, {
+      headers: {
+        "Content-Type": s3Response.ContentType || "application/octet-stream",
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
   } catch (error) {
     console.error("Preview error:", error);
     return NextResponse.json(
