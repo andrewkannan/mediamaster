@@ -665,10 +665,10 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
               )}
             </div>
           )}
-          </>
-        )}
-        </div>
-      </main>
+        </>
+      )}
+      </div>
+    </main>
 
       {isUploadOpen && (
         <UploadModal
