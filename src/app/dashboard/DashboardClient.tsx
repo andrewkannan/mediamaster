@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Image from "next/image";
 import { Sidebar, ViewType } from "@/components/Sidebar";
 import { UploadModal } from "@/components/UploadModal";
 import { TagEditModal } from "@/components/TagEditModal";
@@ -571,11 +572,13 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                                 <VideoIcon className="w-12 h-12 text-gray-700" />
                               </div>
                             ) : (
-                              <img
+                              <Image
                                 src={`/api/media/${item.id}/preview`}
                                 alt={item.original_filename}
-                                className="absolute inset-0 object-cover w-full h-full image-fade-in"
-                                loading="lazy"
+                                fill
+                                sizes="(max-width: 640px) 100vw, (max-width: 768px) 50vw, (max-width: 1024px) 33vw, 20vw"
+                                className="absolute inset-0 object-cover image-fade-in"
+                                unoptimized={video} // we don't need it optimized if it's somehow a video (though this block only runs if !video)
                               />
                             )}
                             
