@@ -352,7 +352,6 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
         
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
-            title: item.original_filename,
             files: [file]
           });
         } else {
