@@ -2,7 +2,7 @@
 
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useDropzone } from "react-dropzone";
-import { X, UploadCloud, File as FileIcon, CheckCircle, AlertCircle, Loader2, Folder as FolderIcon } from "lucide-react";
+import { X, UploadCloud, File as FileIcon, CheckCircle, AlertCircle, Loader2, Folder as FolderIcon, Plus } from "lucide-react";
 // @ts-ignore
 import exifr from "exifr";
 
@@ -22,7 +22,9 @@ interface UploadFile {
 export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModalProps) {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
-  const [tags, setTags] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [existingTags, setExistingTags] = useState<{name: string, _count: {mediaTags: number}}[]>([]);
   const [allowedTypes, setAllowedTypes] = useState<string[]>(["image", "video"]);
 
   // Fetch settings on mount
@@ -33,6 +35,13 @@ export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModal
         if (data.allowedFileTypes) {
           setAllowedTypes(data.allowedFileTypes);
         }
+      })
+      .catch(console.error);
+
+    fetch("/api/tags")
+      .then(res => res.json())
+      .then(data => {
+        if (data.tags) setExistingTags(data.tags);
       })
       .catch(console.error);
   }, []);
@@ -92,7 +101,10 @@ export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModal
 
   const handleUpload = async () => {
     setIsUploading(true);
-    const parsedTags = tags.split(",").map((t) => t.trim()).filter(Boolean);
+    const parsedTags = Array.from(new Set([
+      ...selectedTags,
+      ...tagInput.split(",").map((t) => t.trim().toLowerCase()).filter(Boolean)
+    ]));
 
     let allSuccess = true;
 
@@ -292,16 +304,97 @@ export function UploadModal({ onClose, onUploadComplete, folderId }: UploadModal
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Apply Tags (comma separated)
+                  Apply Tags
                 </label>
+                
+                {/* Selected Tags Display */}
+                {selectedTags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {selectedTags.map(tag => (
+                      <span key={tag} className="flex items-center gap-1 bg-blue-500/20 text-blue-400 px-2 py-1 rounded-md text-sm border border-blue-500/30">
+                        {tag}
+                        <button onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))} className="hover:text-white transition-colors">
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 <input
                   type="text"
-                  placeholder="e.g. worship, crowd, sunday-service"
-                  value={tags}
-                  onChange={(e) => setTags(e.target.value)}
-                  className="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                  placeholder="Type a tag and press comma or Enter..."
+                  value={tagInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val.endsWith(',')) {
+                      const newTag = val.slice(0, -1).trim().toLowerCase();
+                      if (newTag && !selectedTags.includes(newTag)) {
+                        setSelectedTags(prev => [...prev, newTag]);
+                      }
+                      setTagInput("");
+                    } else {
+                      setTagInput(val);
+                    }
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const newTag = tagInput.trim().toLowerCase();
+                      if (newTag && !selectedTags.includes(newTag)) {
+                        setSelectedTags(prev => [...prev, newTag]);
+                      }
+                      setTagInput("");
+                    }
+                  }}
+                  className="w-full bg-gray-900 border border-gray-600 rounded-md px-4 py-2 text-white focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm mb-4"
                   disabled={isUploading}
                 />
+
+                {/* Smart Suggestions */}
+                <div className="mb-4">
+                  <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider font-semibold">Smart Suggestions</p>
+                  <div className="flex flex-wrap gap-2">
+                    {["sunday-service", new Date().toISOString().split('T')[0]].map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => !selectedTags.includes(tag) && setSelectedTags(prev => [...prev, tag])}
+                        disabled={selectedTags.includes(tag)}
+                        className={`text-xs px-2.5 py-1.5 rounded-full border transition-colors flex items-center gap-1 ${
+                          selectedTags.includes(tag) 
+                            ? 'bg-blue-500/20 border-blue-500/30 text-blue-400 opacity-50 cursor-not-allowed'
+                            : 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20 cursor-pointer'
+                        }`}
+                      >
+                        <Plus className="w-3 h-3" />
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Existing Tags */}
+                {existingTags.length > 0 && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-2 uppercase tracking-wider font-semibold">Your Tags</p>
+                    <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto pr-2 custom-scrollbar">
+                      {existingTags.map(t => (
+                        <button
+                          key={t.name}
+                          onClick={() => !selectedTags.includes(t.name) && setSelectedTags(prev => [...prev, t.name])}
+                          disabled={selectedTags.includes(t.name)}
+                          className={`text-xs px-2 py-1 rounded-md border transition-colors ${
+                            selectedTags.includes(t.name)
+                              ? 'bg-gray-800 border-gray-700 text-gray-500 cursor-not-allowed'
+                              : 'bg-gray-800 border-gray-600 text-gray-300 hover:border-gray-400 hover:text-white cursor-pointer'
+                          }`}
+                        >
+                          {t.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
