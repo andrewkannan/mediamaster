@@ -596,53 +596,53 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                             
                             <div className="mt-auto pt-3 flex flex-col gap-2">
                               {/* Action Buttons */}
-                              <div className={`flex flex-wrap gap-1.5 transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                              <div className={`flex gap-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg p-1 w-max transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                 {view !== "trash" ? (
                                   <>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); toggleHighlight(item.id, item.is_highlighted); }}
-                                      className="p-1.5 rounded-md bg-[#212121] hover:bg-[#2f2f2f] transition-colors"
+                                      className="p-2 rounded hover:bg-white/10 transition-colors"
                                       title={item.is_highlighted ? "Remove Highlight" : "Highlight to pin to top"}
                                     >
-                                      <Star className={`w-3.5 h-3.5 ${item.is_highlighted ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`} />
+                                      <Star className={`w-4 h-4 ${item.is_highlighted ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
                                     </button>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); setTagEditMediaId(item.id); }}
-                                      className="p-1.5 rounded-md bg-[#212121] hover:bg-[#2f2f2f] transition-colors"
+                                      className="p-2 rounded hover:bg-white/10 transition-colors"
                                       title="Edit Tags"
                                     >
-                                      <TagIcon className="w-3.5 h-3.5 text-gray-400" />
+                                      <TagIcon className="w-4 h-4 text-gray-300" />
                                     </button>
                                     <a
                                       href={`/api/media/${item.id}/download`}
                                       onClick={(e) => e.stopPropagation()}
-                                      className="p-1.5 rounded-md bg-[#212121] hover:bg-[#2f2f2f] transition-colors block"
+                                      className="p-2 rounded hover:bg-white/10 transition-colors block"
                                       title="Download Original"
                                     >
-                                      <Download className="w-3.5 h-3.5 text-gray-400" />
+                                      <Download className="w-4 h-4 text-gray-300" />
                                     </a>
                                     <button
                                       onClick={(e) => handleNativeShare(e, item)}
-                                      className="p-1.5 rounded-md bg-[#212121] hover:bg-[#2f2f2f] transition-colors"
+                                      className="p-2 rounded hover:bg-white/10 transition-colors"
                                       title="Share to App (e.g. Lightroom)"
                                     >
-                                      <Share className="w-3.5 h-3.5 text-gray-400" />
+                                      <Share className="w-4 h-4 text-gray-300" />
                                     </button>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); deleteMedia(item.id, true); }}
-                                      className="p-1.5 rounded-md bg-[#212121] hover:bg-red-500/20 hover:text-red-400 transition-colors text-gray-400"
+                                      className="p-2 rounded hover:bg-red-500/20 hover:text-red-400 transition-colors text-gray-300"
                                       title="Delete Media"
                                     >
-                                      <Trash2 className="w-3.5 h-3.5" />
+                                      <Trash2 className="w-4 h-4" />
                                     </button>
                                   </>
                                 ) : (
                                   <button
                                     onClick={(e) => { e.stopPropagation(); deleteMedia(item.id, false); }}
-                                    className="p-1.5 rounded-md bg-[#212121] hover:bg-green-500/20 hover:text-green-400 transition-colors text-green-500"
+                                    className="p-2 rounded hover:bg-green-500/20 hover:text-green-400 transition-colors text-green-500"
                                     title="Restore"
                                   >
-                                    <RotateCcw className="w-3.5 h-3.5" />
+                                    <RotateCcw className="w-4 h-4" />
                                   </button>
                                 )}
                               </div>
