@@ -571,66 +571,54 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                               />
                             )}
                             
-                            <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-60"></div>
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-80 pointer-events-none"></div>
                             
-                            {/* Action Buttons moved to bottom card section */}
-                          </div>
+                            {/* Overlay Filename and Size at the bottom-left */}
+                            <div className="absolute bottom-2 left-3 right-3 flex flex-col pointer-events-none z-10">
+                              <p className="text-xs font-semibold text-white/90 truncate drop-shadow-md">
+                                {item.original_filename}
+                              </p>
+                              <p className="text-[10px] text-gray-400 drop-shadow-md font-medium mt-0.5">
+                                {formatSize(item.size)} {item.mediaTags.length > 0 && `• ${item.mediaTags.length} tag${item.mediaTags.length > 1 ? 's' : ''}`}
+                              </p>
+                            </div>
 
-                          <div className="p-3 flex flex-col flex-1 min-w-0">
-                            <p className="text-sm font-medium text-[#ececec] truncate mb-1" title={item.original_filename}>
-                              {item.original_filename}
-                            </p>
-                            <p className="text-xs text-gray-500 mb-2">
-                              {formatSize(item.size)}
-                            </p>
-                            
-                            {item.mediaTags.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mb-2">
-                                {item.mediaTags.slice(0, 2).map((t) => (
-                                  <span key={t.tag.name} className="px-1.5 py-0.5 bg-[#212121] text-gray-400 rounded text-[10px] truncate max-w-full border border-[#2f2f2f]">
-                                    {t.tag.name}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            
-                            <div className="mt-auto pt-3 flex flex-col gap-2">
-                              {/* Action Buttons */}
-                              <div className={`flex gap-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-lg p-1 w-max transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                            {/* Action Buttons overlaid on image center on hover/select */}
+                            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex gap-1.5 bg-black/50 backdrop-blur-md border border-white/20 rounded-xl p-1.5 w-max shadow-2xl transition-all duration-200 ${isSelected ? 'opacity-100 scale-100 z-20' : 'opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 z-20'}`}>
                                 {view !== "trash" ? (
                                   <>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); toggleHighlight(item.id, item.is_highlighted); }}
-                                      className="p-2 rounded hover:bg-white/10 transition-colors"
+                                      className="p-2 rounded-lg hover:bg-white/20 transition-colors"
                                       title={item.is_highlighted ? "Remove Highlight" : "Highlight to pin to top"}
                                     >
-                                      <Star className={`w-4 h-4 ${item.is_highlighted ? "fill-yellow-400 text-yellow-400" : "text-gray-300"}`} />
+                                      <Star className={`w-4 h-4 ${item.is_highlighted ? "fill-yellow-400 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]" : "text-white"}`} />
                                     </button>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); setTagEditMediaId(item.id); }}
-                                      className="p-2 rounded hover:bg-white/10 transition-colors"
+                                      className="p-2 rounded-lg hover:bg-white/20 transition-colors"
                                       title="Edit Tags"
                                     >
-                                      <TagIcon className="w-4 h-4 text-gray-300" />
+                                      <TagIcon className="w-4 h-4 text-white" />
                                     </button>
                                     <a
                                       href={`/api/media/${item.id}/download`}
                                       onClick={(e) => e.stopPropagation()}
-                                      className="p-2 rounded hover:bg-white/10 transition-colors block"
+                                      className="p-2 rounded-lg hover:bg-white/20 transition-colors block"
                                       title="Download Original"
                                     >
-                                      <Download className="w-4 h-4 text-gray-300" />
+                                      <Download className="w-4 h-4 text-white" />
                                     </a>
                                     <button
                                       onClick={(e) => handleNativeShare(e, item)}
-                                      className="p-2 rounded hover:bg-white/10 transition-colors"
+                                      className="p-2 rounded-lg hover:bg-white/20 transition-colors"
                                       title="Share to App (e.g. Lightroom)"
                                     >
-                                      <Share className="w-4 h-4 text-gray-300" />
+                                      <Share className="w-4 h-4 text-white" />
                                     </button>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); deleteMedia(item.id, true); }}
-                                      className="p-2 rounded hover:bg-red-500/20 hover:text-red-400 transition-colors text-gray-300"
+                                      className="p-2 rounded-lg hover:bg-red-500/40 hover:text-red-300 transition-colors text-white"
                                       title="Delete Media"
                                     >
                                       <Trash2 className="w-4 h-4" />
@@ -639,16 +627,12 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                                 ) : (
                                   <button
                                     onClick={(e) => { e.stopPropagation(); deleteMedia(item.id, false); }}
-                                    className="p-2 rounded hover:bg-green-500/20 hover:text-green-400 transition-colors text-green-500"
+                                    className="p-2 rounded-lg hover:bg-green-500/40 hover:text-green-300 transition-colors text-white"
                                     title="Restore"
                                   >
                                     <RotateCcw className="w-4 h-4" />
                                   </button>
                                 )}
-                              </div>
-                              <span className="text-[10px] text-gray-600 truncate max-w-full">
-                                by {item.uploadedBy?.name || item.uploadedBy?.email?.split('@')[0]}
-                              </span>
                             </div>
                           </div>
                         </div>
