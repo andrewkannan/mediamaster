@@ -459,9 +459,12 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
               )}
             </div>
           </div>
-        </div>
 
-          {/* Breadcrumbs (only show if in a folder) */}
+          {view === "settings" ? (
+            <SettingsView />
+          ) : (
+            <>
+              {/* Breadcrumbs (only show if in a folder) */}
           {view === "folder" && breadcrumbs.length > 0 && (
             <div className="flex items-center space-x-2 text-sm font-medium mb-6 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
               <button onClick={handleNavigateHome} className="text-gray-400 hover:text-white transition-colors">
