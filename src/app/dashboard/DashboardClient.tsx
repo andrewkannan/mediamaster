@@ -6,7 +6,7 @@ import { UploadModal } from "@/components/UploadModal";
 import { TagEditModal } from "@/components/TagEditModal";
 import { FolderCreateModal } from "@/components/FolderCreateModal";
 import { ShareModal } from "@/components/ShareModal";
-import { Star, Download, Search, Image as ImageIcon, Video as VideoIcon, Folder, ChevronRight, Tag as TagIcon, Trash2, RotateCcw, Link as LinkIcon, CheckSquare, Square, X, Menu, Plus } from "lucide-react";
+import { Star, Download, Search, Image as ImageIcon, Video as VideoIcon, Folder, ChevronRight, Tag as TagIcon, Trash2, RotateCcw, Link as LinkIcon, CheckSquare, Square, X, Menu, Plus, Share } from "lucide-react";
 
 interface MediaTag {
   tag: {
@@ -331,6 +331,30 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
     return folder.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
+  const handleNativeShare = async (e: React.MouseEvent, item: MediaItem) => {
+    e.stopPropagation();
+    if (navigator.share) {
+      try {
+        const response = await fetch(`/api/media/${item.id}/download`);
+        const blob = await response.blob();
+        const file = new File([blob], item.original_filename, { type: blob.type });
+        
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: item.original_filename,
+            files: [file]
+          });
+        } else {
+          setShareModalData({ id: item.id, type: 'media', title: item.original_filename });
+        }
+      } catch (error) {
+        console.error('Error sharing:', error);
+      }
+    } else {
+      setShareModalData({ id: item.id, type: 'media', title: item.original_filename });
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-950 overflow-hidden">
       <Sidebar 
@@ -540,40 +564,41 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-60"></div>
                             
                             {/* Top Right Action Buttons */}
-                            <div className="absolute top-2 right-2 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className={`absolute top-2 right-2 flex flex-col space-y-2 transition-opacity ${isSelected ? 'opacity-100 z-20' : 'opacity-0 group-hover:opacity-100 z-20'}`}>
                               {view !== "trash" ? (
                                 <>
                                   <button
-                                    onClick={() => toggleHighlight(item.id, item.is_highlighted)}
-                                    className="p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-gray-800 transition-colors"
+                                    onClick={(e) => { e.stopPropagation(); toggleHighlight(item.id, item.is_highlighted); }}
+                                    className="p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-gray-800 transition-colors shadow-lg"
                                     title={item.is_highlighted ? "Remove Highlight" : "Highlight to pin to top"}
                                   >
                                     <Star className={`w-4 h-4 ${item.is_highlighted ? "fill-yellow-400 text-yellow-400" : "text-white"}`} />
                                   </button>
                                   <button
-                                    onClick={() => setTagEditMediaId(item.id)}
-                                    className="p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-gray-800 transition-colors"
+                                    onClick={(e) => { e.stopPropagation(); setTagEditMediaId(item.id); }}
+                                    className="p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-gray-800 transition-colors shadow-lg"
                                     title="Edit Tags"
                                   >
                                     <TagIcon className="w-4 h-4 text-white" />
                                   </button>
                                   <a
                                     href={`/api/media/${item.id}/download`}
-                                    className="text-gray-400 hover:text-white p-1.5 rounded transition-colors block"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="text-gray-400 hover:text-white p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-gray-800 transition-colors block shadow-lg"
                                     title="Download Original"
                                   >
                                     <Download className="w-4 h-4" />
                                   </a>
                                   <button
-                                    onClick={() => setShareModalData({ id: item.id, type: 'media', title: item.original_filename })}
-                                    className="text-gray-400 hover:text-white p-1.5 rounded transition-colors"
-                                    title="Share File"
+                                    onClick={(e) => handleNativeShare(e, item)}
+                                    className="text-gray-400 hover:text-white p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-gray-800 transition-colors shadow-lg"
+                                    title="Share to App (e.g. Lightroom)"
                                   >
-                                    <LinkIcon className="w-4 h-4" />
+                                    <Share className="w-4 h-4" />
                                   </button>
                                   <button
-                                    onClick={() => deleteMedia(item.id, true)}
-                                    className="p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-red-500/20 hover:text-red-400 text-white transition-colors"
+                                    onClick={(e) => { e.stopPropagation(); deleteMedia(item.id, true); }}
+                                    className="p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-red-500/20 hover:text-red-400 text-white transition-colors shadow-lg"
                                     title="Delete Media"
                                   >
                                     <Trash2 className="w-4 h-4" />
@@ -581,8 +606,8 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                                 </>
                               ) : (
                                 <button
-                                  onClick={() => deleteMedia(item.id, false)}
-                                  className="text-green-500 hover:text-green-400 p-1.5 rounded transition-colors"
+                                  onClick={(e) => { e.stopPropagation(); deleteMedia(item.id, false); }}
+                                  className="text-green-500 hover:text-green-400 p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-gray-800 transition-colors shadow-lg"
                                   title="Restore"
                                 >
                                   <RotateCcw className="w-4 h-4" />
@@ -673,7 +698,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
       )}
 
       {/* Floating Bulk Action Bar */}
-      {selectedMediaIds.size > 0 && (
+      {selectedMediaIds.size > 1 && (
         <div className="fixed bottom-4 sm:bottom-6 left-1/2 transform -translate-x-1/2 bg-[#171717] border border-[#2f2f2f] rounded-full shadow-2xl px-4 sm:px-6 py-2.5 sm:py-3 flex items-center gap-3 sm:gap-6 z-40 w-max max-w-[95vw] overflow-x-auto no-scrollbar">
           <span className="text-xs sm:text-sm font-medium text-white whitespace-nowrap">
             {selectedMediaIds.size} <span className="hidden sm:inline">selected</span>
