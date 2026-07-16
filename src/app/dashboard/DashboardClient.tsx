@@ -337,7 +337,17 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
       try {
         const response = await fetch(`/api/media/${item.id}/download`);
         const blob = await response.blob();
-        const file = new File([blob], item.original_filename, { type: blob.type });
+        
+        const ext = item.original_filename.split('.').pop()?.toLowerCase();
+        let mimeType = blob.type;
+        if (ext && ['jpg', 'jpeg'].includes(ext)) mimeType = 'image/jpeg';
+        else if (ext === 'png') mimeType = 'image/png';
+        else if (ext === 'webp') mimeType = 'image/webp';
+        else if (ext === 'gif') mimeType = 'image/gif';
+        else if (ext === 'mp4') mimeType = 'video/mp4';
+        else if (ext && ['mov', 'qt'].includes(ext)) mimeType = 'video/quicktime';
+
+        const file = new File([blob], item.original_filename, { type: mimeType });
         
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
           await navigator.share({
@@ -563,57 +573,7 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                             
                             <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent opacity-60"></div>
                             
-                            {/* Top Right Action Buttons */}
-                            <div className={`absolute top-2 right-2 flex flex-col space-y-2 transition-opacity ${isSelected ? 'opacity-100 z-20' : 'opacity-0 group-hover:opacity-100 z-20'}`}>
-                              {view !== "trash" ? (
-                                <>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); toggleHighlight(item.id, item.is_highlighted); }}
-                                    className="p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-gray-800 transition-colors shadow-lg"
-                                    title={item.is_highlighted ? "Remove Highlight" : "Highlight to pin to top"}
-                                  >
-                                    <Star className={`w-4 h-4 ${item.is_highlighted ? "fill-yellow-400 text-yellow-400" : "text-white"}`} />
-                                  </button>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); setTagEditMediaId(item.id); }}
-                                    className="p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-gray-800 transition-colors shadow-lg"
-                                    title="Edit Tags"
-                                  >
-                                    <TagIcon className="w-4 h-4 text-white" />
-                                  </button>
-                                  <a
-                                    href={`/api/media/${item.id}/download`}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="text-gray-400 hover:text-white p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-gray-800 transition-colors block shadow-lg"
-                                    title="Download Original"
-                                  >
-                                    <Download className="w-4 h-4" />
-                                  </a>
-                                  <button
-                                    onClick={(e) => handleNativeShare(e, item)}
-                                    className="text-gray-400 hover:text-white p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-gray-800 transition-colors shadow-lg"
-                                    title="Share to App (e.g. Lightroom)"
-                                  >
-                                    <Share className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); deleteMedia(item.id, true); }}
-                                    className="p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-red-500/20 hover:text-red-400 text-white transition-colors shadow-lg"
-                                    title="Delete Media"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
-                                </>
-                              ) : (
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); deleteMedia(item.id, false); }}
-                                  className="text-green-500 hover:text-green-400 p-1.5 rounded-full bg-gray-900/80 backdrop-blur-sm border border-white/10 hover:bg-gray-800 transition-colors shadow-lg"
-                                  title="Restore"
-                                >
-                                  <RotateCcw className="w-4 h-4" />
-                                </button>
-                              )}
-                            </div>
+                            {/* Action Buttons moved to bottom card section */}
                           </div>
 
                           <div className="p-3 flex flex-col flex-1 min-w-0">
@@ -634,8 +594,59 @@ export default function DashboardClient({ initialMedia, bucketName, region }: Da
                               </div>
                             )}
                             
-                            <div className="mt-auto pt-3 flex justify-between items-center">
-                              <span className="text-[10px] text-gray-600 truncate max-w-[90px]">
+                            <div className="mt-auto pt-3 flex flex-col gap-2">
+                              {/* Action Buttons */}
+                              <div className={`flex flex-wrap gap-1.5 transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                {view !== "trash" ? (
+                                  <>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); toggleHighlight(item.id, item.is_highlighted); }}
+                                      className="p-1.5 rounded-md bg-[#212121] hover:bg-[#2f2f2f] transition-colors"
+                                      title={item.is_highlighted ? "Remove Highlight" : "Highlight to pin to top"}
+                                    >
+                                      <Star className={`w-3.5 h-3.5 ${item.is_highlighted ? "fill-yellow-400 text-yellow-400" : "text-gray-400"}`} />
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setTagEditMediaId(item.id); }}
+                                      className="p-1.5 rounded-md bg-[#212121] hover:bg-[#2f2f2f] transition-colors"
+                                      title="Edit Tags"
+                                    >
+                                      <TagIcon className="w-3.5 h-3.5 text-gray-400" />
+                                    </button>
+                                    <a
+                                      href={`/api/media/${item.id}/download`}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="p-1.5 rounded-md bg-[#212121] hover:bg-[#2f2f2f] transition-colors block"
+                                      title="Download Original"
+                                    >
+                                      <Download className="w-3.5 h-3.5 text-gray-400" />
+                                    </a>
+                                    <button
+                                      onClick={(e) => handleNativeShare(e, item)}
+                                      className="p-1.5 rounded-md bg-[#212121] hover:bg-[#2f2f2f] transition-colors"
+                                      title="Share to App (e.g. Lightroom)"
+                                    >
+                                      <Share className="w-3.5 h-3.5 text-gray-400" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); deleteMedia(item.id, true); }}
+                                      className="p-1.5 rounded-md bg-[#212121] hover:bg-red-500/20 hover:text-red-400 transition-colors text-gray-400"
+                                      title="Delete Media"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </>
+                                ) : (
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); deleteMedia(item.id, false); }}
+                                    className="p-1.5 rounded-md bg-[#212121] hover:bg-green-500/20 hover:text-green-400 transition-colors text-green-500"
+                                    title="Restore"
+                                  >
+                                    <RotateCcw className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-gray-600 truncate max-w-full">
                                 by {item.uploadedBy?.name || item.uploadedBy?.email?.split('@')[0]}
                               </span>
                             </div>
